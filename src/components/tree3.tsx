@@ -1,13 +1,10 @@
 import React, { useEffect, useRef, useState, JSX } from 'react';
 import * as d3 from 'd3';
 import { D3Node } from './utils';
-import { HierarchyNode } from 'd3-hierarchy';
 
 interface RadialTreeProps {
   data: D3Node;
-  containerRef: React.RefObject<HTMLDivElement>;
   width?: number;
-  height?: number;
   onNodeClick?: (node: D3Node) => void;
 }
 
@@ -21,19 +18,19 @@ interface RadialNode extends d3.HierarchyNode<D3Node> {
   radius?: number;
   linkNode?: SVGPathElement;
   linkExtensionNode?: SVGPathElement;
+  color?: string;
 }
 
 export const RadialTree = ({
   data,
-  containerRef,
   width = 1000,
-  height = 1000,
   onNodeClick
 }: RadialTreeProps): JSX.Element => {
   const [variableLinks, setVariableLinks] = useState(true);
   const linkExtensionRef = useRef<d3.Selection<SVGPathElement, RadialNodeLink, SVGGElement, unknown>>(null);
   const linkRef = useRef<d3.Selection<SVGPathElement, RadialNodeLink, SVGGElement, unknown>>(null);
   const nodesRef = useRef<d3.Selection<SVGGElement, RadialNode, SVGGElement, unknown>>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const outerRadius = width / 2;
   const innerRadius = outerRadius - 170;
@@ -89,8 +86,8 @@ export const RadialTree = ({
     `;
   }
 
-  useEffect(() => {
-    if (!containerRef.current) return;
+  useEffect(() => { // Render tree
+    if (!containerRef.current || !data) return;
 
     d3.select(containerRef.current).selectAll("*").remove();
 
@@ -134,8 +131,13 @@ export const RadialTree = ({
     cluster(treeData); // Not sure what this does, possibly places leaves all on same level
     setRadius(treeData, 0, innerRadius / maxLength(treeData));
 
-    function updateNodeLinkExtension(node: RadialNode, active: boolean) {
-      d3.select(node.linkExtensionNode).classed("link-extension--active", active);
+    function linkhovered(active: boolean): (event: d3.BaseType, d: RadialNodeLink) => void {
+      return function (event: d3.BaseType, d: RadialNodeLink): void {
+        d3.select(this).classed("link--active", active);
+        if (d.target.linkExtensionNode) {
+          d3.select(d.target.linkExtensionNode).classed("link-extension--active", active).raise();
+        }
+      };
     }
 
     const linkExtension = svg.append("g")
@@ -145,7 +147,7 @@ export const RadialTree = ({
       .selectAll("path")
       .data(treeData.links().filter(d => !d.target.children)) // targets nodes without children
       .join("path")
-      .each(function (d: RadialNode) { d.target.linkExtensionNode = this; })
+      .each(function (d: RadialNodeLink) { d.target.linkExtensionNode = this as SVGPathElement; })
       .attr("d", linkExtensionConstant);
 
     const link = svg.append("g")
@@ -154,15 +156,73 @@ export const RadialTree = ({
       .selectAll("path")
       .data(root.links())
       .join("path")
-      .each(function (d) { d.target.linkNode = this; })
+      .each(function (d: RadialNodeLink) { d.target.linkNode = this as SVGPathElement; })
       .attr("d", linkConstant)
-      .attr("stroke", d => d.target.color)
+      .attr("stroke", (d: RadialNodeLink) => d.target.color || "#000")
       .on("mouseover", linkhovered(true))
       .on("mouseout", linkhovered(false));
 
-  }, [data, width, height, containerRef, onNodeClick]);
+    svg.append("g")
+      .selectAll("text")
+      .data(root.leaves())
+      .join("text")
+      .attr("dy", ".31em")
+      .attr("transform", d => `rotate(${(d.x ?? 0) - 90}) translate(${innerRadius + 4},0)${(d.x ?? 0) < 180 ? "" : " rotate(180)"}`)
+      .attr("text-anchor", d => (d.x ?? 0) < 180 ? "start" : "end")
+      .text(d => d.data.name.replace(/_/g, " "))
+      .on("mouseover", leafhovered(true))
+      .on("mouseout", leafhovered(false));
 
-  useEffect(() => {
+    function leafhovered(active: boolean): (event: d3.BaseType, d: RadialNode) => void {
+      return function (event, d) {
+        d3.select(this).classed("label--active", active);
+        if (d.linkExtensionNode) {
+          d3.select(d.linkExtensionNode).classed("link-extension--active", active).raise();
+        }
+        do {
+          if (d.linkNode) {
+            d3.select(d.linkNode).classed("link--active", active).raise();
+          }
+        } while (d.parent && (d = d.parent));
+      };
+    }
+
+    // Add nodes
+    const nodes = svg.selectAll(".node")
+      .data(treeData.descendants().filter(d => d.children))
+      .join("g")
+      .attr("class", "inner-node")
+      .attr("transform", d => `
+        rotate(${d.x - 90}) 
+        translate(${d.y},0)
+        ${d.x >= 180 ? "rotate(180)" : ""}
+    `);
+
+    // Add circles for nodes
+    nodes.append("circle")
+      .attr("r", 2)
+      .style("fill", "#fff")
+      .style("stroke", "steelblue")
+      .style("stroke-width", 1.5)
+      .on("click", function (event, d) {
+        console.log(d);
+        console.log(typeof (d));
+      });
+
+    linkExtensionRef.current = linkExtension as unknown as d3.Selection<SVGPathElement, RadialNodeLink, SVGGElement, unknown>;
+    console.log(linkExtension);
+    linkRef.current = link as unknown as d3.Selection<SVGPathElement, RadialNodeLink, SVGGElement, unknown>;
+    console.log(link);
+    nodesRef.current = nodes as unknown as d3.Selection<SVGGElement, RadialNode, SVGGElement, unknown>;
+    console.log(nodes);
+
+    // Append SVG to container
+    containerRef.current.innerHTML = ''; // Clear existing content
+    containerRef.current.appendChild(svg.node()!);
+
+  }, [data, width, onNodeClick]);
+
+  useEffect(() => { // Transition between variable and constant links
     const t = d3.transition().duration(750);
     linkExtensionRef.current?.transition(t)
       .attr("d", !variableLinks ? linkExtensionVariable : linkExtensionConstant);
@@ -172,11 +232,14 @@ export const RadialTree = ({
       .attr("transform", !variableLinks ? nodeTransformVariable : nodeTransformConstant);
   }, [variableLinks]);
 
+  
+
   return (
     <div className="radial-tree">
       <button onClick={() => setVariableLinks(!variableLinks)}>
         Toggle Variable Links
       </button>
+      <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
     </div>
   );
 
