@@ -1,9 +1,10 @@
-interface TreeNode {
+export interface TreeNode {
     name?: string;
     length?: number;
     branchset?: TreeNode[];
 }
-interface D3Node {
+
+export interface D3Node {
     name: string;
     value: number;
     children?: D3Node[];

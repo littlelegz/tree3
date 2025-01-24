@@ -197,6 +197,7 @@ function App() {
       .style("stroke-width", 1.5)
       .on("click", function (event, d) {
         console.log(d);
+        console.log(typeof(d));
       });
 
     // Add inner node labels
@@ -210,8 +211,11 @@ function App() {
     //   .on("mouseout", mouseovered(false));
 
     linkExtensionRef.current = linkExtension;
+    console.log(linkExtension);
     linkRef.current = link;
+    console.log(link);
     nodesRef.current = nodes;
+    console.log(nodes);
 
   }, [treeInputData]);
 
