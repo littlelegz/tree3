@@ -1,0 +1,21 @@
+.App {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.link {
+  fill: none;
+  stroke: #555;
+}
+
+.node circle {
+  fill: white;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.node text {
+  font: 10px sans-serif;
+}
