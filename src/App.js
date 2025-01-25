@@ -6,6 +6,7 @@ import { RadialTree } from './components/tree3.tsx';
 
 function App() {
   const [treeInputData, setTreeData] = useState(null);
+  const treeRef = useRef(null);
 
   // Tree rendering constants
   const width = 1000;
@@ -25,15 +26,16 @@ function App() {
     fetchTree();
   }, []);
 
-  useEffect(() => {
-    
-
-  }, [treeInputData]);
-
   return (
     <div className="App">
-      <div style={{ width: '100vh', height: '100vh' }}>
-        <RadialTree data={treeInputData} width={width} />
+      <div style={{ width: '100vh', height: '100vh' }} >
+        <RadialTree data={treeInputData} width={width} ref={treeRef} />
+        <button
+          onClick={() => console.log(treeRef.current?.getNodes())}
+          style={{ position: 'absolute', top: '20px', left: '20px' }}
+        >
+          Print Nodes
+        </button>
       </div>
     </div>
   );

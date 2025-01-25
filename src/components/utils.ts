@@ -1,14 +1,4 @@
-export interface TreeNode {
-    name?: string;
-    length?: number;
-    branchset?: TreeNode[];
-}
-
-export interface D3Node {
-    name: string;
-    value: number;
-    children?: D3Node[];
-}
+import { TreeNode, D3Node } from './types';
 
 export const convertToD3Format = (node: TreeNode | null): D3Node | null => {
     if (!node) return null;

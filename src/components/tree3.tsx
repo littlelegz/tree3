@@ -1,31 +1,18 @@
-import React, { useEffect, useRef, useState, JSX } from 'react';
+import React, { useEffect, useRef, useState, JSX, forwardRef, useImperativeHandle } from 'react';
 import * as d3 from 'd3';
-import { D3Node } from './utils';
+import { D3Node, RadialNode, RadialNodeLink, RadialTreeProps } from './types';
 
-interface RadialTreeProps {
-  data: D3Node;
-  width?: number;
-  onNodeClick?: (node: D3Node) => void;
+export interface RadialTreeRef {
+  getLinkExtension: () => d3.Selection<SVGPathElement, RadialNodeLink, SVGGElement, unknown> | null;
+  getLink: () => d3.Selection<SVGPathElement, RadialNodeLink, SVGGElement, unknown> | null;
+  getNodes: () => d3.Selection<SVGGElement, RadialNode, SVGGElement, unknown> | null;
 }
 
-interface RadialNodeLink {
-  source: RadialNode;
-  target: RadialNode;
-}
-
-// Extend D3's HierarchyNode with radius property
-interface RadialNode extends d3.HierarchyNode<D3Node> {
-  radius?: number;
-  linkNode?: SVGPathElement;
-  linkExtensionNode?: SVGPathElement;
-  color?: string;
-}
-
-export const RadialTree = ({
+export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
   data,
   width = 1000,
   onNodeClick
-}: RadialTreeProps): JSX.Element => {
+}, ref) => {
   const [variableLinks, setVariableLinks] = useState(true);
   const linkExtensionRef = useRef<d3.Selection<SVGPathElement, RadialNodeLink, SVGGElement, unknown>>(null);
   const linkRef = useRef<d3.Selection<SVGPathElement, RadialNodeLink, SVGGElement, unknown>>(null);
@@ -89,13 +76,21 @@ export const RadialTree = ({
   useEffect(() => { // Render tree
     if (!containerRef.current || !data) return;
 
+    // Zoom behavior
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.5, 5]) // Min/max zoom level
+      .on('zoom', (event) => {
+        svg.attr('transform', event.transform);
+      });
+
     d3.select(containerRef.current).selectAll("*").remove();
 
     // Make SVG element
     const svg = d3.select(containerRef.current).append("svg");
     svg.attr("viewBox", [-outerRadius, -outerRadius, width, width])
       .attr("font-family", "sans-serif")
-      .attr("font-size", 5);
+      .attr("font-size", 5)
+      .call(zoom);
 
     svg.append("style").text(`
       .link--active {
@@ -111,6 +106,20 @@ export const RadialTree = ({
         font-weight: bold;
       }
 
+      .node--active {
+        stroke: #003366 !important;
+        fill: #0066cc !important;
+      }
+
+      .tooltip {
+        position: absolute;
+        background: white;
+        padding: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        pointer-events: none;
+        font-size: 12px;
+      }
     `);
 
     const cluster = d3.cluster<D3Node>()
@@ -187,6 +196,54 @@ export const RadialTree = ({
       };
     }
 
+    function nodeHovered(active: boolean): (event: d3.BaseType, d: RadialNode) => void {
+      return function (event, d) {
+        d3.select(this).classed("node--active", active);
+
+        // Highlight connected links
+        if (d.linkExtensionNode) {
+          d3.select(d.linkExtensionNode)
+            .classed("link-extension--active", active)
+            .raise();
+        }
+
+        // Highlight path to root
+        let current = d;
+        do {
+          if (current.linkNode) {
+            d3.select(current.linkNode)
+              .classed("link--active", active)
+              .raise();
+          }
+        } while (current.parent && (current = current.parent));
+      };
+    }
+
+    function nodeClicked(event: MouseEvent, d: RadialNode): void {
+      console.log("Node clicked", d);
+      d3.selectAll('.tooltip').remove();
+
+      // Create and position tooltip
+      const tooltip = d3.select('body')
+        .append('div')
+        .attr('class', 'tooltip')
+        .style('left', (event.pageX - 50) + 'px')
+        .style('top', (event.pageY - 25) + 'px')
+        .style('opacity', 0);
+
+      // Show tooltip with node name
+      tooltip
+        .html(d.data.name)
+        .transition()
+        .duration(200)
+        .style('opacity', 1);
+
+      // Remove tooltip after 2 seconds
+      setTimeout(() => {
+        tooltip.remove();
+      }, 2000);
+    }
+
     // Add nodes
     const nodes = svg.selectAll(".node")
       .data(treeData.descendants().filter(d => d.children))
@@ -204,17 +261,13 @@ export const RadialTree = ({
       .style("fill", "#fff")
       .style("stroke", "steelblue")
       .style("stroke-width", 1.5)
-      .on("click", function (event, d) {
-        console.log(d);
-        console.log(typeof (d));
-      });
+      .on("click", nodeClicked)
+      .on("mouseover", nodeHovered(true))
+      .on("mouseout", nodeHovered(false));;
 
     linkExtensionRef.current = linkExtension as unknown as d3.Selection<SVGPathElement, RadialNodeLink, SVGGElement, unknown>;
-    console.log(linkExtension);
     linkRef.current = link as unknown as d3.Selection<SVGPathElement, RadialNodeLink, SVGGElement, unknown>;
-    console.log(link);
     nodesRef.current = nodes as unknown as d3.Selection<SVGGElement, RadialNode, SVGGElement, unknown>;
-    console.log(nodes);
 
     // Append SVG to container
     containerRef.current.innerHTML = ''; // Clear existing content
@@ -232,7 +285,11 @@ export const RadialTree = ({
       .attr("transform", !variableLinks ? nodeTransformVariable : nodeTransformConstant);
   }, [variableLinks]);
 
-  
+  useImperativeHandle(ref, () => ({
+    getLinkExtension: () => linkExtensionRef.current,
+    getLink: () => linkRef.current,
+    getNodes: () => nodesRef.current
+  }));
 
   return (
     <div className="radial-tree">
@@ -243,4 +300,4 @@ export const RadialTree = ({
     </div>
   );
 
-};
+});
