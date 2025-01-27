@@ -1,12 +1,11 @@
-import { RadialNode, RadialNodeLink } from './types';
+import { RadialNode } from './types';
 import * as d3 from 'd3';
 
-function getBoundingBox(node: RadialNode, isVariable: boolean): { minX: number; maxX: number; minY: number; maxY: number } {
+function getBoundingBox(node: RadialNode, isVariable: boolean): { minX: number; maxX: number; minY: number } {
   let bbox = {
     minX: node.x ?? 0,
     maxX: node.x ?? 0,
     minY: isVariable ? node.radius ?? 0 : node.y ?? 0,
-    maxY: isVariable ? node.radius ?? 0 : node.y ?? 0
   };
 
   if (node.children) {
@@ -15,7 +14,6 @@ function getBoundingBox(node: RadialNode, isVariable: boolean): { minX: number; 
       bbox.minX = Math.min(bbox.minX, childBox.minX);
       bbox.maxX = Math.max(bbox.maxX, childBox.maxX);
       bbox.minY = Math.min(bbox.minY, childBox.minY);
-      bbox.maxY = Math.max(bbox.maxY, childBox.maxY);
     });
   }
 
@@ -29,7 +27,7 @@ export const countLeaves = (node: RadialNode): number => {
   return node.children.reduce((sum: number, child: any) => sum + countLeaves(child), 0);
 };
 
-export function highlightDescendants(node: RadialNode, active: boolean, linksVariable: boolean, svg: d3.Selection<SVGSVGElement, unknown, null, undefined>): void {
+export function highlightDescendants(node: RadialNode, active: boolean, linksVariable: boolean, svg: d3.Selection<SVGGElement, unknown, null, undefined>, innerRadius: number): void {
   const bbox = getBoundingBox(node, linksVariable);
 
   // Remove existing highlight
@@ -41,7 +39,7 @@ export function highlightDescendants(node: RadialNode, active: boolean, linksVar
       .attr('class', 'highlight-box')
       .attr('d', d3.arc()({
         innerRadius: bbox.minY,
-        outerRadius: bbox.maxY,
+        outerRadius: innerRadius + 170,
         startAngle: (bbox.minX) * (Math.PI / 180),
         endAngle: (bbox.maxX) * (Math.PI / 180)
       }))

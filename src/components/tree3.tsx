@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState, JSX, forwardRef, useImperativeHandle } from 'react';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
 import * as d3 from 'd3';
 import { D3Node, RadialNode, RadialNodeLink, RadialTreeProps } from './types';
-import { highlightDescendants, countLeaves } from './treeUtils.ts';
+import { highlightDescendants, countLeaves } from './treeUtils.tsx';
 import '../css/tree3.css';
 
 export interface RadialTreeRef {
@@ -19,6 +19,7 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
 }, ref) => {
   const [variableLinks, setVariableLinks] = useState(false);
   const [displayLeaves, setDisplayLeaves] = useState(true);
+  const [tipAlign, setTipAlign] = useState(true);
   const linkExtensionRef = useRef<d3.Selection<SVGPathElement, RadialNodeLink, SVGGElement, unknown>>(null);
   const linkRef = useRef<d3.Selection<SVGPathElement, RadialNodeLink, SVGGElement, unknown>>(null);
   const nodesRef = useRef<d3.Selection<SVGGElement, RadialNode, SVGGElement, unknown>>(null);
@@ -27,6 +28,7 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
   const tooltipRef = useRef<d3.Selection<HTMLDivElement, unknown, null, undefined>>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const variableLinksRef = useRef<boolean>(false); // Using this ref so highlighting descendants updates correctly
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
 
   const outerRadius = width / 2;
@@ -90,17 +92,19 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.5, 5]) // Min/max zoom level
       .on('zoom', (event) => {
-        svg.attr('transform', event.transform);
+        svgMain.select("g").attr('transform', event.transform);
       });
 
     d3.select(containerRef.current).selectAll("*").remove();
 
     // Make SVG element
-    const svg: d3.Selection<SVGSVGElement, unknown, null, undefined> = d3.select(containerRef.current).append("svg");
-    svg.attr("viewBox", [-outerRadius, -outerRadius, width, width])
+    const svgMain: d3.Selection<SVGSVGElement, unknown, null, undefined> = d3.select(containerRef.current).append("svg")
+      .attr("viewBox", [-outerRadius, -outerRadius, width, width])
       .attr("font-family", "sans-serif")
       .attr("font-size", 5)
       .call(zoom);
+
+    const svg = svgMain.append("g");
 
     svg.append("style").text(`
       .link--active {
@@ -155,15 +159,24 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     cluster(treeData); // Not sure what this does, possibly places leaves all on same level
     setRadius(treeData, 0, innerRadius / maxLength(treeData));
 
+    // Link functions
+
     function linkhovered(active: boolean): (event: d3.BaseType, d: RadialNodeLink) => void {
       return function (event: d3.BaseType, d: RadialNodeLink): void {
         d3.select(this).classed("link--active", active);
         if (d.target.linkExtensionNode) {
           d3.select(d.target.linkExtensionNode).classed("link-extension--active", active).raise();
         }
+
+        highlightDescendants(d.target, active, variableLinksRef.current, svg, innerRadius);
       };
     }
 
+    function linkClicked(event: MouseEvent, d: RadialNodeLink): void {
+      console.log('Link clicked', d);
+    }
+
+    // Draw links
     const linkExtension = svg.append("g")
       .attr("fill", "none")
       .attr("stroke", "#000")
@@ -186,6 +199,7 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       .on("mouseover", linkhovered(true))
       .on("mouseout", linkhovered(false));
 
+    // Draw leaf labels
     const leafLabels = svg.append("g")
       .selectAll("text")
       .data(root.leaves())
@@ -197,6 +211,7 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       .on("mouseover", leafhovered(true))
       .on("mouseout", leafhovered(false));
 
+    // Leaf functions
     function leafhovered(active: boolean): (event: d3.BaseType, d: RadialNode) => void {
       return function (event, d) {
         d3.select(this).classed("label--active", active);
@@ -211,6 +226,7 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       };
     }
 
+    // Node functions
     function nodeMouseOver(active: boolean): (event: MouseEvent, d: RadialNode) => void {
       return function (event, d) {
         d3.select(this).classed("node--active", active);
@@ -233,7 +249,7 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
         } while (current.parent && (current = current.parent));
 
         // Highlight descendants
-        highlightDescendants(d, active, variableLinksRef.current, svg);
+        highlightDescendants(d, active, variableLinksRef.current, svg, innerRadius);
       };
     }
 
@@ -342,13 +358,13 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     linkRef.current = link as unknown as d3.Selection<SVGPathElement, RadialNodeLink, SVGGElement, unknown>;
     nodesRef.current = nodes as unknown as d3.Selection<SVGGElement, RadialNode, SVGGElement, unknown>;
     leafLabelsRef.current = leafLabels as unknown as d3.Selection<SVGTextElement, RadialNode, SVGGElement, unknown>;
-    svgRef.current = svg.node();
+    svgRef.current = svgMain.node();
 
     // Append SVG to container
     containerRef.current.innerHTML = ''; // Clear existing content
-    containerRef.current.appendChild(svg.node()!);
+    containerRef.current.appendChild(svgMain.node()!);
 
-  }, [data, width, onNodeClick]);
+  }, [data, width, onNodeClick, refreshTrigger]);
 
   useEffect(() => { // Transition between variable and constant links
     const t = d3.transition().duration(750);
@@ -359,7 +375,11 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     nodesRef.current?.transition(t)
       .attr("transform", variableLinks ? nodeTransformVariable : nodeTransformConstant);
     variableLinksRef.current = variableLinks;
-  }, [variableLinks]);
+    // If alignTips is true, set leaf label text transform to be radius value of it's data
+    leafLabelsRef.current?.transition(t)
+      .attr("transform", d => `rotate(${(d.x ?? 0) - 90}) translate(${tipAlign ? d.radius : innerRadius + 4},0)${(d.x ?? 0) < 180 ? "" : " rotate(180)"}`);
+
+  }, [variableLinks, tipAlign]);
 
   useEffect(() => { // Toggle leaf label visibility
     leafLabelsRef.current?.style("display", displayLeaves ? "block" : "none");
@@ -373,6 +393,14 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     getLeaves: () => leafLabelsRef.current
   }));
 
+  const recenterView = () => {
+    const svg = d3.select(containerRef.current).select('svg').select('g');
+
+    svg.transition()
+      .duration(750)
+      .attr('transform', "translate(0,0)");
+  };
+
   return (
     <div className="radial-tree">
       <button onClick={() => setVariableLinks(!variableLinks)}>
@@ -381,8 +409,22 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       <button onClick={() => setDisplayLeaves(!displayLeaves)}>
         Toggle Leaves
       </button>
-      <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
+      <button onClick={() => setTipAlign(!tipAlign)}>
+        Toggle Tip Align
+      </button>
+      <button onClick={() => recenterView()}>
+        Recenter
+      </button>
+      <button onClick={() => setRefreshTrigger(prev => prev + 1)}>
+        Refresh
+      </button>
+      <div ref={containerRef} style={{
+        width: "100%",
+        height: "100%",
+        overflow: "hidden",
+        border: "1px solid #ccc",
+        borderRadius: "4px"
+      }} />
     </div>
   );
-
 });

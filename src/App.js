@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import './App.css';
 import { parseNewick, convertToD3Format } from './components/utils.ts';
 import { RadialTree } from './components/tree3.tsx';
@@ -13,7 +13,7 @@ function App() {
   useEffect(() => {
     const fetchTree = async () => {
       try {
-        const response = await fetch('asr.tree');
+        const response = await fetch(process.env.PUBLIC_URL + '/asr.tree');
         const newickString = await response.text();
         const parsedTree = parseNewick(newickString);
         const d3Tree = convertToD3Format(parsedTree);
