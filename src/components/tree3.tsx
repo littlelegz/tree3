@@ -1,11 +1,15 @@
 import React, { useEffect, useRef, useState, JSX, forwardRef, useImperativeHandle } from 'react';
+import { createRoot } from 'react-dom/client';
 import * as d3 from 'd3';
 import { D3Node, RadialNode, RadialNodeLink, RadialTreeProps } from './types';
+import { highlightDescendants, countLeaves } from './treeUtils.ts';
+import '../css/tree3.css';
 
 export interface RadialTreeRef {
-  getLinkExtension: () => d3.Selection<SVGPathElement, RadialNodeLink, SVGGElement, unknown> | null;
-  getLink: () => d3.Selection<SVGPathElement, RadialNodeLink, SVGGElement, unknown> | null;
-  getNodes: () => d3.Selection<SVGGElement, RadialNode, SVGGElement, unknown> | null;
+  getLinkExtensions: () => d3.Selection<SVGPathElement, RadialNodeLink, SVGGElement, unknown> | null;
+  getLinks: () => d3.Selection<SVGPathElement, RadialNodeLink, SVGGElement, unknown> | null;
+  getInnerNodes: () => d3.Selection<SVGGElement, RadialNode, SVGGElement, unknown> | null;
+  getLeaves: () => d3.Selection<SVGTextElement, RadialNode, SVGGElement, unknown> | null;
 }
 
 export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
@@ -13,11 +17,17 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
   width = 1000,
   onNodeClick
 }, ref) => {
-  const [variableLinks, setVariableLinks] = useState(true);
+  const [variableLinks, setVariableLinks] = useState(false);
+  const [displayLeaves, setDisplayLeaves] = useState(true);
   const linkExtensionRef = useRef<d3.Selection<SVGPathElement, RadialNodeLink, SVGGElement, unknown>>(null);
   const linkRef = useRef<d3.Selection<SVGPathElement, RadialNodeLink, SVGGElement, unknown>>(null);
   const nodesRef = useRef<d3.Selection<SVGGElement, RadialNode, SVGGElement, unknown>>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const leafLabelsRef = useRef<d3.Selection<SVGTextElement, RadialNode, SVGGElement, unknown>>(null);
+  const tooltipRef = useRef<d3.Selection<HTMLDivElement, unknown, null, undefined>>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const variableLinksRef = useRef<boolean>(false); // Using this ref so highlighting descendants updates correctly
+
 
   const outerRadius = width / 2;
   const innerRadius = outerRadius - 170;
@@ -86,7 +96,7 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     d3.select(containerRef.current).selectAll("*").remove();
 
     // Make SVG element
-    const svg = d3.select(containerRef.current).append("svg");
+    const svg: d3.Selection<SVGSVGElement, unknown, null, undefined> = d3.select(containerRef.current).append("svg");
     svg.attr("viewBox", [-outerRadius, -outerRadius, width, width])
       .attr("font-family", "sans-serif")
       .attr("font-size", 5)
@@ -95,6 +105,11 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     svg.append("style").text(`
       .link--active {
         stroke: #000 !important;
+        stroke-width: 1.5px;
+      }
+
+      .link--important {
+        stroke: #F00 !important;
         stroke-width: 1.5px;
       }
 
@@ -111,19 +126,19 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
         fill: #0066cc !important;
       }
 
-      .tooltip {
+      .tooltip-node {
         position: absolute;
         background: white;
         padding: 5px;
         border: 1px solid #ccc;
         border-radius: 4px;
-        pointer-events: none;
         font-size: 12px;
+        z-index: 10;
       }
     `);
 
     const cluster = d3.cluster<D3Node>()
-      .size([360, innerRadius])
+      .size([355, innerRadius]) // [angle to spread nodes, radius]
       .separation((a, b) => 1)
 
     const root = d3.hierarchy<D3Node>(data);
@@ -171,7 +186,7 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       .on("mouseover", linkhovered(true))
       .on("mouseout", linkhovered(false));
 
-    svg.append("g")
+    const leafLabels = svg.append("g")
       .selectAll("text")
       .data(root.leaves())
       .join("text")
@@ -196,7 +211,7 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       };
     }
 
-    function nodeHovered(active: boolean): (event: d3.BaseType, d: RadialNode) => void {
+    function nodeMouseOver(active: boolean): (event: MouseEvent, d: RadialNode) => void {
       return function (event, d) {
         d3.select(this).classed("node--active", active);
 
@@ -212,36 +227,92 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
         do {
           if (current.linkNode) {
             d3.select(current.linkNode)
-              .classed("link--active", active)
+              .classed("link--important", active)
               .raise();
           }
         } while (current.parent && (current = current.parent));
+
+        // Highlight descendants
+        highlightDescendants(d, active, variableLinksRef.current, svg);
       };
     }
 
-    function nodeClicked(event: MouseEvent, d: RadialNode): void {
-      console.log("Node clicked", d);
-      d3.selectAll('.tooltip').remove();
+    function showHoverLabel(event: MouseEvent, d: RadialNode): void {
+      // Clear any existing tooltips
+      d3.selectAll('.tooltip-node').remove();
 
-      // Create and position tooltip
-      const tooltip = d3.select('body')
+      tooltipRef.current = d3.select(containerRef.current)
         .append('div')
-        .attr('class', 'tooltip')
-        .style('left', (event.pageX - 50) + 'px')
-        .style('top', (event.pageY - 25) + 'px')
-        .style('opacity', 0);
+        .attr('class', 'tooltip-node')
+        .style('position', 'fixed')
+        .style('left', `${event.clientX + 10}px`)
+        .style('top', `${event.clientY - 10}px`)
+        .style('opacity', 0)
+        .html(`${d.data.name}<br/>Leaves: ${countLeaves(d)}`);
 
-      // Show tooltip with node name
-      tooltip
-        .html(d.data.name)
+      tooltipRef.current
         .transition()
         .duration(200)
         .style('opacity', 1);
+    }
 
-      // Remove tooltip after 2 seconds
-      setTimeout(() => {
-        tooltip.remove();
-      }, 2000);
+    function hideHoverLabel(): void {
+      if (tooltipRef.current) {
+        tooltipRef.current
+          .transition()
+          .duration(200)
+          .style('opacity', 0)
+          .remove();
+      }
+    }
+
+    function nodeClicked(event: MouseEvent, d: RadialNode): void {
+      d3.selectAll('.tooltip-node').remove();
+
+      const menu = d3.select(containerRef.current)
+        .append('div')
+        .attr('class', 'menu-node')
+        .style('position', 'fixed')
+        .style('left', `${event.clientX + 10}px`)
+        .style('top', `${event.clientY - 10}px`)
+        .style('opacity', 1)
+        .node();
+
+      const MenuContent = (
+        <>
+          <div className="menu-header">{d.data.name}<button
+            className="menu-close-btn"
+            onClick={() => {
+              menu?.remove();
+            }}
+            style={{
+              position: 'absolute',
+              right: '8px',
+              top: '8px',
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >X</button></div>
+          <div className="menu-buttons">
+            <button className="menu-btn" onClick={() => console.log('expand', d)}>
+              Expand All
+            </button>
+            <button className="menu-btn" onClick={() => console.log('collapse', d)}>
+              Collapse All
+            </button>
+            <button className="menu-btn" onClick={() => console.log('focus', d)}>
+              Focus Here
+            </button>
+          </div>
+        </>
+      );
+
+      if (menu) {
+        const root = createRoot(menu);
+        root.render(MenuContent);
+      }
     }
 
     // Add nodes
@@ -257,17 +328,21 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
 
     // Add circles for nodes
     nodes.append("circle")
-      .attr("r", 2)
+      .attr("r", 3)
       .style("fill", "#fff")
       .style("stroke", "steelblue")
       .style("stroke-width", 1.5)
       .on("click", nodeClicked)
-      .on("mouseover", nodeHovered(true))
-      .on("mouseout", nodeHovered(false));;
+      .on("mouseover", nodeMouseOver(true))
+      .on("mouseout", nodeMouseOver(false))
+      .on('mouseenter', showHoverLabel)
+      .on('mouseleave', hideHoverLabel);
 
     linkExtensionRef.current = linkExtension as unknown as d3.Selection<SVGPathElement, RadialNodeLink, SVGGElement, unknown>;
     linkRef.current = link as unknown as d3.Selection<SVGPathElement, RadialNodeLink, SVGGElement, unknown>;
     nodesRef.current = nodes as unknown as d3.Selection<SVGGElement, RadialNode, SVGGElement, unknown>;
+    leafLabelsRef.current = leafLabels as unknown as d3.Selection<SVGTextElement, RadialNode, SVGGElement, unknown>;
+    svgRef.current = svg.node();
 
     // Append SVG to container
     containerRef.current.innerHTML = ''; // Clear existing content
@@ -278,23 +353,33 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
   useEffect(() => { // Transition between variable and constant links
     const t = d3.transition().duration(750);
     linkExtensionRef.current?.transition(t)
-      .attr("d", !variableLinks ? linkExtensionVariable : linkExtensionConstant);
+      .attr("d", variableLinks ? linkExtensionVariable : linkExtensionConstant);
     linkRef.current?.transition(t)
-      .attr("d", !variableLinks ? linkVariable : linkConstant);
+      .attr("d", variableLinks ? linkVariable : linkConstant);
     nodesRef.current?.transition(t)
-      .attr("transform", !variableLinks ? nodeTransformVariable : nodeTransformConstant);
+      .attr("transform", variableLinks ? nodeTransformVariable : nodeTransformConstant);
+    variableLinksRef.current = variableLinks;
   }, [variableLinks]);
 
+  useEffect(() => { // Toggle leaf label visibility
+    leafLabelsRef.current?.style("display", displayLeaves ? "block" : "none");
+    linkExtensionRef.current?.style("display", displayLeaves ? "block" : "none");
+  }, [displayLeaves]);
+
   useImperativeHandle(ref, () => ({
-    getLinkExtension: () => linkExtensionRef.current,
-    getLink: () => linkRef.current,
-    getNodes: () => nodesRef.current
+    getLinkExtensions: () => linkExtensionRef.current,
+    getLinks: () => linkRef.current,
+    getInnerNodes: () => nodesRef.current,
+    getLeaves: () => leafLabelsRef.current
   }));
 
   return (
     <div className="radial-tree">
       <button onClick={() => setVariableLinks(!variableLinks)}>
         Toggle Variable Links
+      </button>
+      <button onClick={() => setDisplayLeaves(!displayLeaves)}>
+        Toggle Leaves
       </button>
       <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
     </div>
