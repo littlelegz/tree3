@@ -147,11 +147,6 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
 
     const root = d3.hierarchy<D3Node>(data);
     const tree = d3.tree<D3Node>()
-      .size([2 * Math.PI, 4000])
-      .nodeSize([30, 30])
-      .separation((a, b) => {
-        return (a.parent === b.parent ? 1 : 2) / a.depth * ((a.data.value || 0) / 50);
-      });
 
     // Generate tree layout
     const treeData = tree(root);
@@ -181,6 +176,7 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       .attr("fill", "none")
       .attr("stroke", "#000")
       .attr("stroke-opacity", 0.25)
+      .attr("stroke-dasharray", "4,4")
       .selectAll("path")
       .data(treeData.links().filter(d => !d.target.children)) // targets nodes without children
       .join("path")
@@ -197,7 +193,8 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       .attr("d", linkConstant)
       .attr("stroke", (d: RadialNodeLink) => d.target.color || "#000")
       .on("mouseover", linkhovered(true))
-      .on("mouseout", linkhovered(false));
+      .on("mouseout", linkhovered(false))
+      .on("click", linkClicked);
 
     // Draw leaf labels
     const leafLabels = svg.append("g")
@@ -366,19 +363,37 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
 
   }, [data, width, onNodeClick, refreshTrigger]);
 
-  useEffect(() => { // Transition between variable and constant links
+  useEffect(() => { // Transition between variable and constant links, and tip alignment
     const t = d3.transition().duration(750);
-    linkExtensionRef.current?.transition(t)
-      .attr("d", variableLinks ? linkExtensionVariable : linkExtensionConstant);
+    if (!tipAlign) {
+
+      linkExtensionRef.current?.transition(t)
+        .attr("d", variableLinks ? linkExtensionVariable : linkExtensionConstant)
+        .style("display", null);
+
+    } else {
+      linkExtensionRef.current?.transition(t).style("display", "none");
+    }
+
+    // Transition between variable and constant links
     linkRef.current?.transition(t)
       .attr("d", variableLinks ? linkVariable : linkConstant);
+
+    // Transition nodes to stay in correct position
     nodesRef.current?.transition(t)
       .attr("transform", variableLinks ? nodeTransformVariable : nodeTransformConstant);
-    variableLinksRef.current = variableLinks;
+    variableLinksRef.current = variableLinks; // This ref update is for highlighting descendants
+
     // If alignTips is true, set leaf label text transform to be radius value of it's data
     leafLabelsRef.current?.transition(t)
-      .attr("transform", d => `rotate(${(d.x ?? 0) - 90}) translate(${tipAlign ? d.radius : innerRadius + 4},0)${(d.x ?? 0) < 180 ? "" : " rotate(180)"}`);
-
+      .attr("transform", d => {
+        const angle = (d.x ?? 0) - 90;
+        const distance = tipAlign
+          ? (variableLinksRef.current ? d.radius : innerRadius + 4)
+          : innerRadius + 4;
+        const flip = (d.x ?? 0) < 180 ? "" : " rotate(180)";
+        return `rotate(${angle}) translate(${distance},0)${flip}`;
+      });
   }, [variableLinks, tipAlign]);
 
   useEffect(() => { // Toggle leaf label visibility

@@ -1,7 +1,9 @@
 export interface TreeNode {
     name?: string;
     length?: number;
-    branchset?: TreeNode[];
+    branchset: TreeNode[];
+    id?: number
+    parent?: TreeNode | null
 }
 
 export interface D3Node {
@@ -27,4 +29,38 @@ export interface RadialNode extends d3.HierarchyNode<D3Node> {
   linkNode?: SVGPathElement;
   linkExtensionNode?: SVGPathElement;
   color?: string;
+}
+
+export interface UnrootedNode extends TreeNode {
+  angle: number;
+  isTip: boolean;
+  parentId: number | null;
+  parentName: string | null;
+  thisId: number;
+  thisName: string;
+  x: number;
+  y: number; 
+}
+
+export interface EqAngNode extends TreeNode {
+  angle: number;
+  end: number;
+  ntips: number;
+  start: number;
+  x: number;
+  y: number;
+}
+
+export interface UnrootedNodeLink {
+  id1: number;
+  id2: number;
+  x1: number;
+  x2: number;
+  y1: number;
+  y2: number;
+}
+
+export interface UnrootedData {
+  data: UnrootedNode[];
+  edges: UnrootedNodeLink[];
 }
