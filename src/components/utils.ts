@@ -28,10 +28,10 @@ export function readTree(text: string): TreeNode {
         nodeId = 0;
 
     for (const token of tokens) {
-        if (token == "" || token == ';') {
+        if (token === "" || token === ';') {
             continue
         }
-        if (token == '(') {
+        if (token === '(') {
             // add a child to current node
             let child = {
                 parent: curnode,
@@ -40,7 +40,7 @@ export function readTree(text: string): TreeNode {
             curnode.branchset.push(child);
             curnode = child;  // climb up
         }
-        else if (token == ',') {
+        else if (token === ',') {
             // climb down, add another child to parent
             if (curnode.parent) {
                 curnode = curnode.parent;
@@ -54,7 +54,7 @@ export function readTree(text: string): TreeNode {
             curnode.branchset.push(child);
             curnode = child;  // climb up
         }
-        else if (token == ')') {
+        else if (token === ')') {
             // climb down twice
             if (curnode.parent) {
                 curnode = curnode.parent;
@@ -68,7 +68,7 @@ export function readTree(text: string): TreeNode {
         else {
             var nodeinfo = token.split(':');
 
-            if (nodeinfo.length == 1) {
+            if (nodeinfo.length === 1) {
                 if (token.startsWith(':')) {
                     curnode.name = "";
                     curnode.length = parseFloat(nodeinfo[0]);
@@ -77,7 +77,7 @@ export function readTree(text: string): TreeNode {
                     curnode.length = undefined;
                 }
             }
-            else if (nodeinfo.length == 2) {
+            else if (nodeinfo.length === 2) {
                 curnode.name = nodeinfo[0];
                 curnode.length = parseFloat(nodeinfo[1]);
             }

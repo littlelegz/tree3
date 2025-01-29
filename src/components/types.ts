@@ -15,12 +15,15 @@ export interface D3Node {
 export interface RadialTreeProps {
   data: D3Node;
   width?: number;
-  onNodeClick?: (node: D3Node) => void;
-}
-
-export interface RadialNodeLink {
-  source: RadialNode;
-  target: RadialNode;
+  onNodeClick?: (event: MouseEvent, node: RadialNode) => void;
+  onNodeMouseOver?: (event: MouseEvent, node: RadialNode) => void;
+  onNodeMouseOut?: (event: MouseEvent, node: RadialNode) => void;
+  onLeafClick?: (event: MouseEvent, node: RadialNode) => void;
+  onLeafMouseOver?: (event: MouseEvent, node: RadialNode) => void;
+  onLeafMouseOut?: (event: MouseEvent, node: RadialNode) => void;
+  onLinkClick?: (event: MouseEvent, source: RadialNode, target: RadialNode) => void;
+  onLinkMouseOver?: (event: MouseEvent, source: RadialNode, target: RadialNode) => void;
+  onLinkMouseOut?: (event: MouseEvent, source: RadialNode, target: RadialNode) => void;
 }
 
 // Extend D3's HierarchyNode with radius property
@@ -28,7 +31,9 @@ export interface RadialNode extends d3.HierarchyNode<D3Node> {
   radius?: number;
   linkNode?: SVGPathElement;
   linkExtensionNode?: SVGPathElement;
+  nodeElement?: SVGGElement;
   color?: string;
+  labelElement?: SVGTextElement;
 }
 
 export interface UnrootedNode extends TreeNode {
@@ -36,10 +41,12 @@ export interface UnrootedNode extends TreeNode {
   isTip: boolean;
   parentId: number | null;
   parentName: string | null;
+  parent: UnrootedNode | null;
   thisId: number;
   thisName: string;
   x: number;
   y: number; 
+  linkNode: SVGPathElement;
 }
 
 export interface EqAngNode extends TreeNode {
@@ -49,18 +56,15 @@ export interface EqAngNode extends TreeNode {
   start: number;
   x: number;
   y: number;
+  linkNode: SVGPathElement;
 }
 
-export interface UnrootedNodeLink {
-  id1: number;
-  id2: number;
-  x1: number;
-  x2: number;
-  y1: number;
-  y2: number;
+export interface Link<NodeType> {
+  source: NodeType;
+  target: NodeType;
 }
 
 export interface UnrootedData {
   data: UnrootedNode[];
-  edges: UnrootedNodeLink[];
+  edges:Link<UnrootedNode>[];
 }
