@@ -1,4 +1,4 @@
-import { RadialNode } from './types';
+import { RadialNode, D3Node, TreeNode } from './types';
 import * as d3 from 'd3';
 
 function getBoundingBox(node: RadialNode, isVariable: boolean): { minX: number; maxX: number; minY: number } {
@@ -134,7 +134,41 @@ export function toggleCollapseClade(node: RadialNode): void {
       });
     }
   }
+}
 
+export function reroot(node: RadialNode, data: TreeNode): RadialNode {
+  // Already root
+  if (!node.parent) return node;
 
+  const tree = d3.tree<D3Node>()
+  // BFS to find node.data.name in data
+  let queue = [data];
+  let found = false;
+  var newRoot = data;
+  var toFlip = data;
+  while (queue.length > 0 && !found) {
+    const current = queue.shift();
+    if (current?.branchset) {
+      for (const child of current.branchset) {
+        if (child.name === node.data.name) { // found node
+          found = true;
+          // remove node from parent's branchset
+          const index = current.branchset.indexOf(child);
+          current.branchset.splice(index, 1);
+          // attach current to this node as child
+          // flip current's relationships
+          toFlip = current;
+          newRoot = child;
+          break;
+        }
+      }
+      queue.push(...current.branchset);
+    }
+  }
 
+  console.log("toflip", toFlip);
+  // Easy step: set the new root as the parent of the current root
+
+  
+  return node;
 }

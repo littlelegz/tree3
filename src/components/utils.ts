@@ -9,7 +9,7 @@ export const convertToD3Format = (node: TreeNode | null): D3Node | null => {
         children: node.branchset
             ? node.branchset.map(child => convertToD3Format(child))
                 .filter((node): node is D3Node => node !== null)
-            : []
+            : [],
     };
 };
 

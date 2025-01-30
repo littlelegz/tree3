@@ -20,9 +20,7 @@ function App() {
         const newickString = await response.text();
         const parsedTree = readTree(newickString);
         setUnrootedTree(parsedTree);
-
-        const d3Tree = convertToD3Format(parsedTree);
-        setTreeData(d3Tree);
+        setTreeData(parsedTree);
       } catch (error) {
         console.error('Error loading tree:', error);
       }
@@ -37,8 +35,7 @@ function App() {
         <RadialTree data={treeInputData} width={width} ref={treeRef} />
         <button
           onClick={() => {
-            treeRef.current?.setVariableLinks(true)
-            treeRef.current?.setTipAlign(false)
+            treeRef.current?.refresh();
           }}
         style={{ position: 'absolute', top: '20px', left: '20px' }}
         >

@@ -2,13 +2,15 @@ import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } f
 import { createRoot } from 'react-dom/client';
 import * as d3 from 'd3';
 import { D3Node, RadialNode, Link, RadialTreeProps } from './types.ts';
+import { convertToD3Format } from './utils.ts';
 import {
   highlightDescendants,
   countLeaves,
   toggleHighlightDescendantLinks,
   toggleHighlightTerminalLinks,
   toggleHighlightLinkToRoot,
-  toggleCollapseClade
+  toggleCollapseClade,
+  reroot
 } from './radialUtils.ts';
 import '../css/tree3.css';
 
@@ -44,10 +46,28 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
   const svgRef = useRef<SVGSVGElement | null>(null);
   const variableLinksRef = useRef<boolean>(false); // Using this ref so highlighting descendants updates correctly
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-
+  const [inputData, setInputData] = useState<RadialNode | null>(null);
+  const [varData, setVarData] = useState<RadialNode | null>(null);
 
   const outerRadius = width / 2;
   const innerRadius = outerRadius - 170;
+
+  useEffect(() => {
+    if (!data) return;
+    console.log("input data ", data)
+
+    const convertedData = convertToD3Format(data);
+    if (!convertedData) return;
+    const root = d3.hierarchy<D3Node>(convertedData);
+    const tree = d3.tree<D3Node>()
+
+    // Generate tree layout
+    const treeData = tree(root);
+
+    setVarData(treeData);
+  }, [data, refreshTrigger]);
+
+
 
   const maxLength = (d: RadialNode): number => {
     return (d.data.value || 0) + (d.children ? d3.max(d.children, maxLength) || 0 : 0);
@@ -101,7 +121,9 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
   }
 
   useEffect(() => { // Render tree
-    if (!containerRef.current || !data) return;
+    if (!containerRef.current || !varData) return;
+
+    console.log("vardata ", varData)
 
     // Zoom behavior
     const zoom = d3.zoom<SVGSVGElement, unknown>()
@@ -175,14 +197,8 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       .size([355, innerRadius]) // [angle to spread nodes, radius]
       .separation((a, b) => 1)
 
-    const root = d3.hierarchy<D3Node>(data);
-    const tree = d3.tree<D3Node>()
-
-    // Generate tree layout
-    const treeData = tree(root);
-
-    cluster(treeData); // Not sure what this does, possibly places leaves all on same level
-    setRadius(treeData, 0, innerRadius / maxLength(treeData));
+    cluster(varData); // Not sure what this does, possibly places leaves all on same level
+    setRadius(varData, 0, innerRadius / maxLength(varData));
 
     // Link functions
 
@@ -219,7 +235,7 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       .attr("stroke-opacity", 0.25)
       .attr("stroke-dasharray", "4,4")
       .selectAll("path")
-      .data(treeData.links().filter(d => !d.target.children)) // targets nodes without children
+      .data(varData.links().filter(d => !d.target.children)) // targets nodes without children
       .join("path")
       .each(function (d: Link<RadialNode>) { d.target.linkExtensionNode = this as SVGPathElement; })
       .attr("d", linkExtensionConstant);
@@ -228,7 +244,7 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       .attr("fill", "none")
       .attr("stroke", "#444")
       .selectAll("path")
-      .data(treeData.links())
+      .data(varData.links())
       .join("path")
       .each(function (d: Link<RadialNode>) { d.target.linkNode = this as SVGPathElement; })
       .attr("d", linkConstant)
@@ -245,9 +261,9 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     // Draw leaf labels
     const leafLabels = svg.append("g")
       .selectAll("text")
-      .data(treeData.leaves())
+      .data(varData.leaves())
       .join("text")
-      .each(function(d: RadialNode) { d.labelElement = this as SVGTextElement; })
+      .each(function (d: RadialNode) { d.labelElement = this as SVGTextElement; })
       .attr("dy", ".31em")
       .attr("transform", d => `rotate(${(d.x ?? 0) - 90}) translate(${innerRadius + 4},0)${(d.x ?? 0) < 180 ? "" : " rotate(180)"}`)
       .attr("text-anchor", d => (d.x ?? 0) < 180 ? "start" : "end")
@@ -340,8 +356,6 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     function nodeClicked(event: MouseEvent, d: RadialNode): void {
       d3.selectAll('.tooltip-node').remove();
 
-      console.log(d)
-
       const menu = d3.select(containerRef.current)
         .append('div')
         .attr('class', 'menu-node')
@@ -381,6 +395,13 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
             <button className="menu-btn" onClick={() => toggleCollapseClade(d)}>
               Collapse Clade
             </button>
+            <button className="menu-btn" onClick={() => {
+              const newTree = reroot(d, data);
+              console.log("new tree ", newTree)
+              setVarData(newTree);
+              }}>
+              Reroot Here
+            </button>
           </div>
         </>
       );
@@ -392,8 +413,8 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
         setTimeout(() => {
           const handleClickOutside = (e: MouseEvent) => {
             if (menu && !menu.contains(e.target as Node)) {
-              root.unmount();
-              menu.remove();
+              //root.unmount();
+              //menu.remove();
               window.removeEventListener('click', handleClickOutside);
             }
           };
@@ -407,14 +428,14 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
 
     // Add nodes
     const nodes = svg.selectAll(".node")
-      .data(treeData.descendants().filter(d => d.children))
+      .data(varData.descendants().filter(d => d.children))
       .join("g")
-      .each(function(d: RadialNode) { d.nodeElement = this as SVGGElement; })
+      .each(function (d: RadialNode) { d.nodeElement = this as SVGGElement; })
       .attr("class", "inner-node")
       .attr("transform", d => `
-        rotate(${d.x - 90}) 
+        rotate(${(d.x ?? 0) - 90}) 
         translate(${d.y},0)
-        ${d.x >= 180 ? "rotate(180)" : ""}
+        ${(d.x ?? 0) >= 180 ? "rotate(180)" : ""}
     `);
 
     // Add circles for nodes
@@ -439,7 +460,7 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     containerRef.current.innerHTML = ''; // Clear existing content
     containerRef.current.appendChild(svgMain.node()!);
 
-  }, [data, width, refreshTrigger]);
+  }, [varData, width]);
 
   useEffect(() => { // Transition between variable and constant links, and tip alignment
     const t = d3.transition().duration(750);
