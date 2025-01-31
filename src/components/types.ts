@@ -24,6 +24,10 @@ export interface RadialTreeProps {
   onLinkClick?: (event: MouseEvent, source: RadialNode, target: RadialNode) => void;
   onLinkMouseOver?: (event: MouseEvent, source: RadialNode, target: RadialNode) => void;
   onLinkMouseOut?: (event: MouseEvent, source: RadialNode, target: RadialNode) => void;
+  customNodeMenuItems?: {
+    label: string;
+    onClick: (node: RadialNode) => void;
+  }
 }
 
 // Extend D3's HierarchyNode with radius property

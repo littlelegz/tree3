@@ -13,6 +13,7 @@ import {
   reroot
 } from './radialUtils.ts';
 import '../css/tree3.css';
+import '../css/menu.css';
 
 export interface RadialTreeRef {
   getLinkExtensions: () => d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown> | null;
@@ -33,6 +34,7 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
   onLeafMouseOut,
   onLinkMouseOver,
   onLinkMouseOut,
+  customNodeMenuItems,
 }, ref) => {
   const [variableLinks, setVariableLinks] = useState(false);
   const [displayLeaves, setDisplayLeaves] = useState(true);
@@ -364,39 +366,32 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
 
       const MenuContent = (
         <>
-          <div className="menu-header">{d.data.name}<button
-            className="menu-close-btn"
-            onClick={() => {
-              menu?.remove();
-            }}
-            style={{
-              position: 'absolute',
-              right: '8px',
-              top: '8px',
-              border: 'none',
-              background: 'transparent',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >X</button></div>
+          <div className="menu-header">{d.data.name}
+
+          </div>
           <div className="menu-buttons">
-            <button className="menu-btn" onClick={() => toggleHighlightDescendantLinks(d)}>
-              Highlight Descendant Links
-            </button>
-            <button className="menu-btn" onClick={() => toggleHighlightTerminalLinks(d)}>
-              Highlight Terminal Links
-            </button>
-            <button className="menu-btn" onClick={() => toggleHighlightLinkToRoot(d)}>
-              Path to Root
-            </button>
-            <button className="menu-btn" onClick={() => toggleCollapseClade(d)}>
+            <a className="dropdown-item" onClick={() => toggleCollapseClade(d)}>
               Collapse Clade
-            </button>
-            <button className="menu-btn" onClick={() => {
+            </a>
+            <div className="dropdown-divider" />
+            <div className="dropdown-header">Toggle Selections</div>
+            <a className="dropdown-item" onClick={() => toggleHighlightDescendantLinks(d)}>
+              Descendant Links
+            </a>
+            <a className="dropdown-item" onClick={() => toggleHighlightTerminalLinks(d)}>
+              Terminal Links
+            </a>
+            <a className="dropdown-item" onClick={() => toggleHighlightLinkToRoot(d)}>
+              Path to Root
+            </a>
+            <div className="dropdown-divider" />
+            <a className="dropdown-item" onClick={() => {
               setVarData(reroot(d, readTree(data))); // NOTE, can only reroot once. Calls will always be calculated from original tree
             }}>
               Reroot Here
-            </button>
+            </a>
+            <div className="dropdown-divider" />
+
           </div>
         </>
       );
