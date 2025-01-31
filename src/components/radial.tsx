@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } f
 import { createRoot } from 'react-dom/client';
 import * as d3 from 'd3';
 import { D3Node, RadialNode, Link, RadialTreeProps } from './types.ts';
-import { convertToD3Format } from './utils.ts';
+import { convertToD3Format, readTree } from './utils.ts';
 import {
   highlightDescendants,
   countLeaves,
@@ -46,7 +46,6 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
   const svgRef = useRef<SVGSVGElement | null>(null);
   const variableLinksRef = useRef<boolean>(false); // Using this ref so highlighting descendants updates correctly
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [inputData, setInputData] = useState<RadialNode | null>(null);
   const [varData, setVarData] = useState<RadialNode | null>(null);
 
   const outerRadius = width / 2;
@@ -54,10 +53,10 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
 
   useEffect(() => {
     if (!data) return;
-    console.log("input data ", data)
 
-    const convertedData = convertToD3Format(data);
+    const convertedData = convertToD3Format(readTree(data));
     if (!convertedData) return;
+
     const root = d3.hierarchy<D3Node>(convertedData);
     const tree = d3.tree<D3Node>()
 
@@ -122,8 +121,6 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
 
   useEffect(() => { // Render tree
     if (!containerRef.current || !varData) return;
-
-    console.log("vardata ", varData)
 
     // Zoom behavior
     const zoom = d3.zoom<SVGSVGElement, unknown>()
@@ -396,10 +393,8 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
               Collapse Clade
             </button>
             <button className="menu-btn" onClick={() => {
-              const newTree = reroot(d, data);
-              console.log("new tree ", newTree)
-              setVarData(newTree);
-              }}>
+              setVarData(reroot(d, readTree(data))); // NOTE, can only reroot once. Calls will always be calculated from original tree
+            }}>
               Reroot Here
             </button>
           </div>
@@ -413,8 +408,11 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
         setTimeout(() => {
           const handleClickOutside = (e: MouseEvent) => {
             if (menu && !menu.contains(e.target as Node)) {
-              //root.unmount();
-              //menu.remove();
+              try {
+                menu.remove();
+              } catch (e) { // When rerooting, tree display is refreshed and menu is removed
+                console.error(e);
+              }
               window.removeEventListener('click', handleClickOutside);
             }
           };

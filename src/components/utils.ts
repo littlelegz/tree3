@@ -94,3 +94,12 @@ export function readTree(text: string): TreeNode {
     return (root);
 }
 
+export const deepCloneD3Node = (node: TreeNode): TreeNode => {
+    return {
+        name: node.name,
+        length: node.length,
+        branchset: node.branchset?.map(child => deepCloneD3Node(child)),
+        id: node.id,
+        parent: node.parent
+    };
+}

@@ -1,5 +1,6 @@
-import { RadialNode, D3Node, TreeNode } from './types';
+import { RadialNode, D3Node } from './types';
 import * as d3 from 'd3';
+import { convertToD3Format } from './utils.ts';
 
 function getBoundingBox(node: RadialNode, isVariable: boolean): { minX: number; maxX: number; minY: number } {
   let bbox = {
@@ -136,6 +137,14 @@ export function toggleCollapseClade(node: RadialNode): void {
   }
 }
 
+interface TreeNode {
+  name?: string;
+  length?: number;
+  branchset: TreeNode[];
+  id?: number
+  parent?: TreeNode | null
+}
+
 export function reroot(node: RadialNode, data: TreeNode): RadialNode {
   // Already root
   if (!node.parent) return node;
@@ -145,7 +154,6 @@ export function reroot(node: RadialNode, data: TreeNode): RadialNode {
   let queue = [data];
   let found = false;
   var newRoot = data;
-  var toFlip = data;
   while (queue.length > 0 && !found) {
     const current = queue.shift();
     if (current?.branchset) {
@@ -155,20 +163,38 @@ export function reroot(node: RadialNode, data: TreeNode): RadialNode {
           // remove node from parent's branchset
           const index = current.branchset.indexOf(child);
           current.branchset.splice(index, 1);
-          // attach current to this node as child
-          // flip current's relationships
-          toFlip = current;
+
           newRoot = child;
-          break;
+
+          // Start flipping process
+          let currentNode = child;
+          let parentNode: TreeNode | null = current;
+
+          while (parentNode) {
+            // Remove current from parent's branchset
+            const index = parentNode.branchset.indexOf(currentNode);
+            if (index > -1) {
+              parentNode.branchset.splice(index, 1);
+            }
+
+            // Add parent to current's branchset
+            currentNode.branchset.push(parentNode);
+
+            // Move up tree
+            currentNode = parentNode;
+            parentNode = parentNode.parent || null;
+          }
+          
+          const d3FormatRoot = convertToD3Format(newRoot);
+          if (!d3FormatRoot) {
+            throw new Error("Failed to convert new root to D3 format");
+          }
+          return tree(d3.hierarchy<D3Node>(d3FormatRoot)) as RadialNode;
         }
       }
       queue.push(...current.branchset);
     }
   }
 
-  console.log("toflip", toFlip);
-  // Easy step: set the new root as the parent of the current root
-
-  
   return node;
 }

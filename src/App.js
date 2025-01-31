@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import './App.css';
-import { parseNewick, convertToD3Format, readTree } from './components/utils.ts';
+import { readTree } from './components/utils.ts';
 import { RadialTree } from './components/radial.tsx';
 import { UnrootedTree } from './components/unrooted.tsx';
 
@@ -20,7 +20,7 @@ function App() {
         const newickString = await response.text();
         const parsedTree = readTree(newickString);
         setUnrootedTree(parsedTree);
-        setTreeData(parsedTree);
+        setTreeData(newickString);
       } catch (error) {
         console.error('Error loading tree:', error);
       }

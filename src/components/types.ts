@@ -13,7 +13,7 @@ export interface D3Node {
 }
 
 export interface RadialTreeProps {
-  data: TreeNode;
+  data: string;
   width?: number;
   onNodeClick?: (event: MouseEvent, node: RadialNode) => void;
   onNodeMouseOver?: (event: MouseEvent, node: RadialNode) => void;
