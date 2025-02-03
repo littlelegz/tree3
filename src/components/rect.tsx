@@ -4,7 +4,6 @@ import * as d3 from 'd3';
 import { D3Node, RadialNode, Link, RadialTreeProps } from './types.ts';
 import { convertToD3Format, readTree } from './utils.ts';
 import {
-  highlightDescendantsRadial,
   countLeaves,
   toggleHighlightDescendantLinks,
   toggleHighlightTerminalLinks,
@@ -12,17 +11,20 @@ import {
   toggleCollapseClade,
   reroot
 } from './radialUtils.ts';
+import {
+  highlightDescendantsRect,
+} from './rectUtils.ts';
 import '../css/tree3.css';
 import '../css/menu.css';
 
-export interface RadialTreeRef {
+export interface RectTreeRef {
   getLinkExtensions: () => d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown> | null;
   getLinks: () => d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown> | null;
   getInnerNodes: () => d3.Selection<SVGGElement, RadialNode, SVGGElement, unknown> | null;
   getLeaves: () => d3.Selection<SVGTextElement, RadialNode, SVGGElement, unknown> | null;
 }
 
-export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
+export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
   data,
   width = 1000,
   onNodeClick,
@@ -36,9 +38,9 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
   onLinkMouseOut,
   customNodeMenuItems,
 }, ref) => {
-  const [variableLinks, setVariableLinks] = useState(false);
+  const [variableLinks, setVariableLinks] = useState(true);
   const [displayLeaves, setDisplayLeaves] = useState(true);
-  const [tipAlign, setTipAlign] = useState(true);
+  const [tipAlign, setTipAlign] = useState(false);
   const linkExtensionRef = useRef<d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown>>(null);
   const linkRef = useRef<d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown>>(null);
   const nodesRef = useRef<d3.Selection<SVGGElement, RadialNode, SVGGElement, unknown>>(null);
@@ -50,20 +52,23 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [varData, setVarData] = useState<RadialNode | null>(null);
 
-  const outerRadius = width / 2;
-  const innerRadius = outerRadius - 170;
-
-  useEffect(() => {
+  useEffect(() => { // Read data and convert to d3 format
     if (!data) return;
 
     const convertedData = convertToD3Format(readTree(data));
     if (!convertedData) return;
 
     const root = d3.hierarchy<D3Node>(convertedData);
-    const tree = d3.tree<D3Node>()
+
+    const cluster = d3.cluster<D3Node>()
+      .nodeSize([10, 20])
+      .separation((a, b) => 2);           // Equal separation between nodes
 
     // Generate tree layout
-    const treeData = tree(root);
+    const treeData = cluster(root);
+    // get the width of tree, find first leaf node, and get x value
+    const width = treeData.leaves()[0].y;
+    setRadius(treeData, 0, width / maxLength(treeData));
 
     setVarData(treeData);
   }, [data, refreshTrigger]);
@@ -77,46 +82,34 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     if (d.children) d.children.forEach(d => setRadius(d, y0, k));
   };
 
-  function linkStep(startAngle: number, startRadius: number, endAngle: number, endRadius: number) {
-    const c0 = Math.cos(startAngle = (startAngle - 90) / 180 * Math.PI);
-    const s0 = Math.sin(startAngle);
-    const c1 = Math.cos(endAngle = (endAngle - 90) / 180 * Math.PI);
-    const s1 = Math.sin(endAngle);
-    return "M" + startRadius * c0 + "," + startRadius * s0
-      + (endAngle === startAngle ? "" : "A" + startRadius + "," + startRadius + " 0 0 " + (endAngle > startAngle ? 1 : 0) + " " + startRadius * c1 + "," + startRadius * s1)
-      + "L" + endRadius * c1 + "," + endRadius * s1;
+  function linkRectangular(startX: number, startY: number, endX: number, endY: number) {
+    return "M" + startY + "," + startX     // Move to start point
+      + "V" + endX
+      + "H" + endY                      // Draw horizontal line to end X
   }
 
   function linkVariable(d: Link<RadialNode>): string {
-    return linkStep(d.source.x ?? 0, d.source.radius ?? 0, d.target.x ?? 0, d.target.radius ?? 0);
+    return linkRectangular(d.source.x ?? 0, d.source.radius ?? 0, d.target.x ?? 0, d.target.radius ?? 0);
   }
 
   function linkConstant(d: Link<RadialNode>): string {
-    return linkStep(d.source.x ?? 0, d.source.y ?? 0, d.target.x ?? 0, d.target.y ?? 0);
+    return linkRectangular(d.source.x ?? 0, d.source.y ?? 0, d.target.x ?? 0, d.target.y ?? 0);
   }
 
   function linkExtensionVariable(d: Link<RadialNode>): string {
-    return linkStep(d.target.x ?? 0, d.target.radius ?? 0, d.target.x ?? 0, innerRadius);
+    return linkRectangular(d.target.x ?? 0, d.target.radius ?? 0, d.target.x ?? 0, varData?.leaves()[0].y ?? 0);
   }
 
   function linkExtensionConstant(d: Link<RadialNode>): string {
-    return linkStep(d.target.x ?? 0, d.target.y ?? 0, d.target.x ?? 0, innerRadius);
+    return linkRectangular(d.target.x ?? 0, d.target.y ?? 0, d.target.x ?? 0, varData?.leaves()[0].y ?? 0);
   }
 
   function nodeTransformVariable(d: RadialNode): string {
-    return `
-      rotate(${(d.x ?? 0) - 90}) 
-      translate(${d.radius || d.y},0)
-      ${(d.x ?? 0) >= 180 ? "rotate(180)" : ""}
-    `;
+    return `translate(${d.radius},${d.x})`;
   }
 
   function nodeTransformConstant(d: RadialNode) {
-    return `
-      rotate(${(d.x ?? 0) - 90}) 
-      translate(${d.y},0)
-      ${(d.x ?? 0) >= 180 ? "rotate(180)" : ""}
-    `;
+    return `translate(${d.y},${d.x})`;
   }
 
   useEffect(() => { // Render tree
@@ -124,7 +117,7 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
 
     // Zoom behavior
     const zoom = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.5, 5]) // Min/max zoom level
+      .scaleExtent([0.5, 5])
       .on('zoom', (event) => {
         svgMain.select("g").attr('transform', event.transform);
       });
@@ -132,71 +125,66 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     // Clear existing content
     d3.select(containerRef.current).selectAll("*").remove();
 
-    // Make SVG element
-    const svgMain: d3.Selection<SVGSVGElement, unknown, null, undefined> = d3.select(containerRef.current).append("svg")
-      .attr("viewBox", [-outerRadius, -outerRadius, width, width])
+    // Setup SVG
+    const svgMain = d3.select(containerRef.current)
+      .append("svg")
+      .attr("viewBox", [0, 0, width, width])
       .attr("font-family", "sans-serif")
-      .attr("font-size", 5)
+      .attr("font-size", 10)
       .call(zoom);
 
-    const svg = svgMain.append("g");
+    const svg = svgMain.append("g")
+      .attr("transform", `translate(50,0)`); // Move tree off the left edge of the screen
 
     // Styles TODO: Move to CSS
     svg.append("style").text(`
-      .link--active {
-        stroke: #000 !important;
-        stroke-width: 2px;
-      }
-
-      .link--important {
-        stroke: #00F !important;
-        stroke-width: 1.5px;
-      }
-
-      .link-extension--active {
-        stroke-opacity: .6;
-      }
-
-      .label--active {
-        font-weight: bold;
-      }
-
-      .node--active {
-        stroke: #003366 !important;
-        fill: #0066cc !important;
-      }
-
-      .link--highlight {
-        stroke: #FF0000 !important;
-        stroke-width: 1.5px;
-      }
-
-      .link--hidden {
-        display: none;
-      }
-
-      .node--collapsed {
-        r: 4px !important; 
-        fill: #0066cc !important;
-      }
-
-      .tooltip-node {
-        position: absolute;
-        background: white;
-        padding: 5px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        font-size: 12px;
-        z-index: 10;
-      }
-    `);
-
-    const cluster = d3.cluster<D3Node>()
-      .size([355, innerRadius]) // [angle to spread nodes, radius]
-      .separation((a, b) => 1)
-
-    cluster(varData); // Places leaves all on same level
-    setRadius(varData, 0, innerRadius / maxLength(varData));
+            .link--active {
+              stroke: #000 !important;
+              stroke-width: 2px;
+            }
+            
+            .link--important {
+              stroke: #00F !important;
+              stroke-width: 1.5px;
+            }
+            
+            .link-extension--active {
+              stroke-opacity: .6;
+            }
+            
+            .label--active {
+              font-weight: bold;
+            }
+            
+            .node--active {
+              stroke: #003366 !important;
+              fill: #0066cc !important;
+            }
+            
+            .link--highlight {
+              stroke: #FF0000 !important;
+              stroke-width: 1.5px;
+            }
+            
+            .link--hidden {
+              display: none;
+            }
+            
+            .node--collapsed {
+              r: 4px !important; 
+              fill: #0066cc !important;
+            }
+            
+            .tooltip-node {
+              position: absolute;
+              background: white;
+              padding: 5px;
+              border: 1px solid #ccc;
+              border-radius: 4px;
+              font-size: 12px;
+              z-index: 10;
+            }
+        `);
 
     // Link functions
     function linkhovered(active: boolean): (event: MouseEvent, d: Link<RadialNode>) => void {
@@ -211,7 +199,7 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
           d3.select(d.target.linkExtensionNode).classed("link-extension--active", active).raise();
         }
 
-        highlightDescendantsRadial(d.target, active, variableLinksRef.current, svg, innerRadius);
+        highlightDescendantsRect(d.target, active, variableLinksRef.current, svg, varData?.leaves()[0].y ?? 0); // TODO Implement for rectangular tree
       };
     }
 
@@ -235,7 +223,7 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       .data(varData.links().filter(d => !d.target.children)) // targets nodes without children
       .join("path")
       .each(function (d: Link<RadialNode>) { d.target.linkExtensionNode = this as SVGPathElement; })
-      .attr("d", linkExtensionConstant);
+      .attr("d", linkExtensionVariable);
 
     const links = svg.append("g")
       .attr("fill", "none")
@@ -244,7 +232,7 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       .data(varData.links())
       .join("path")
       .each(function (d: Link<RadialNode>) { d.target.linkNode = this as SVGPathElement; })
-      .attr("d", linkConstant)
+      .attr("d", linkVariable)
       .attr("stroke", (d: Link<RadialNode>) => d.target.color || "#000")
       .style("cursor", "pointer")
       .on("mouseover", linkhovered(true))
@@ -283,8 +271,7 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       .join("text")
       .each(function (d: RadialNode) { d.labelElement = this as SVGTextElement; })
       .attr("dy", ".31em")
-      .attr("transform", d => `rotate(${(d.x ?? 0) - 90}) translate(${innerRadius + 4},0)${(d.x ?? 0) < 180 ? "" : " rotate(180)"}`)
-      .attr("text-anchor", d => (d.x ?? 0) < 180 ? "start" : "end")
+      .attr("transform", d => `translate(${(d.y ?? 0) + 4},${d.x})`)
       .text(d => d.data.name.replace(/_/g, " "))
       .on("mouseover", leafhovered(true))
       .on("mouseout", leafhovered(false))
@@ -318,7 +305,7 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
         } while (current.parent && (current = current.parent));
 
         // Highlight descendants
-        highlightDescendantsRadial(d, active, variableLinksRef.current, svg, innerRadius);
+        highlightDescendantsRect(d, active, variableLinksRef.current, svg, varData?.leaves()[0].y ?? 0);
       };
     }
 
@@ -418,18 +405,14 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       onNodeClick?.(event, d);
     }
 
-    // Add nodes
+    // Create nodes
     const nodes = svg.append("g")
       .selectAll(".node")
       .data(varData.descendants().filter(d => d.children))
       .join("g")
       .each(function (d: RadialNode) { d.nodeElement = this as SVGGElement; })
       .attr("class", "inner-node")
-      .attr("transform", d => `
-        rotate(${(d.x ?? 0) - 90}) 
-        translate(${d.y},0)
-        ${(d.x ?? 0) >= 180 ? "rotate(180)" : ""}
-    `);
+      .attr("transform", d => `translate(${d.radius},${d.x})`);
 
     // Add circles for nodes
     nodes.append("circle")
@@ -449,8 +432,6 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     leafLabelsRef.current = leafLabels as unknown as d3.Selection<SVGTextElement, RadialNode, SVGGElement, unknown>;
     svgRef.current = svgMain.node();
 
-    // Append SVG to container
-    containerRef.current.appendChild(svgMain.node()!);
 
   }, [varData, width]);
 
@@ -476,14 +457,13 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     variableLinksRef.current = variableLinks; // This ref update is for highlighting descendants
 
     // If alignTips is true, set leaf label text transform to be radius value of it's data
+    const farRadius = varData?.leaves()[0].y ?? 0;
     leafLabelsRef.current?.transition(t)
       .attr("transform", d => {
-        const angle = (d.x ?? 0) - 90;
         const distance = tipAlign
-          ? (variableLinksRef.current ? d.radius : innerRadius + 4)
-          : innerRadius + 4;
-        const flip = (d.x ?? 0) < 180 ? "" : " rotate(180)";
-        return `rotate(${angle}) translate(${distance},0)${flip}`;
+          ? (variableLinksRef.current ? d.radius : farRadius + 4)
+          : farRadius + 4;
+        return `translate(${distance},${d.x})`;
       });
   }, [variableLinks, tipAlign]);
 

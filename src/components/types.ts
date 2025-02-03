@@ -40,6 +40,15 @@ export interface RadialNode extends d3.HierarchyNode<D3Node> {
   labelElement?: SVGTextElement;
 }
 
+export interface RectNode extends d3.HierarchyNode<D3Node> {
+  linkNode?: SVGPathElement;
+  linkExtensionNode?: SVGPathElement;
+  nodeElement?: SVGGElement;
+  color?: string;
+  labelElement?: SVGTextElement;
+}
+
+
 export interface UnrootedNode extends TreeNode {
   angle: number;
   isTip: boolean;

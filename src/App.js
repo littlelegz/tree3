@@ -3,6 +3,7 @@ import './App.css';
 import { readTree } from './components/utils.ts';
 import { RadialTree } from './components/radial.tsx';
 import { UnrootedTree } from './components/unrooted.tsx';
+import { RectTree } from './components/rect.tsx';
 
 function App() {
   const [treeInputData, setTreeData] = useState(null);
@@ -32,10 +33,11 @@ function App() {
   return (
     <div className="App">
       <div style={{ width: '100vh', height: '100vh' }} >
-        <RadialTree data={treeInputData} width={width} ref={treeRef} />
+        {/* <RadialTree data={treeInputData} width={width} ref={treeRef} /> */}
+        <RectTree data={treeInputData} width={width} ref={treeRef} />
         <button
           onClick={() => {
-            treeRef.current?.refresh();
+            treeRef.current?.setVariableLinks(false);
           }}
         style={{ position: 'absolute', top: '20px', left: '20px' }}
         >

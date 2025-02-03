@@ -28,7 +28,7 @@ export const countLeaves = (node: RadialNode): number => {
   return node.children.reduce((sum: number, child: any) => sum + countLeaves(child), 0);
 };
 
-export function highlightDescendants(node: RadialNode, active: boolean, linksVariable: boolean, svg: d3.Selection<SVGGElement, unknown, null, undefined>, innerRadius: number): void {
+export function highlightDescendantsRadial(node: RadialNode, active: boolean, linksVariable: boolean, svg: d3.Selection<SVGGElement, unknown, null, undefined>, innerRadius: number): void {
   const bbox = getBoundingBox(node, linksVariable);
 
   // Remove existing highlight
