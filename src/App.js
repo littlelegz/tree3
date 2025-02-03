@@ -30,14 +30,36 @@ function App() {
 
   }, []);
 
+  const menuTest = [{
+    label: function (node) {
+      if (node['compare']) {
+        return 'Uncompare';
+      } else {  
+        return 'Compare';
+      }
+    },
+    onClick: function (node) {
+      if (node['compare']) {
+        console.log('compare');
+        node['compare'] = false;
+      } else {
+        console.log('not compare');
+        node['compare'] = true;
+      }
+    },
+    toShow: function (node) {
+      return true;
+    }
+  }]
+
   return (
     <div className="App">
       <div style={{ width: '100vh', height: '100vh' }} >
-        {/* <RadialTree data={treeInputData} width={width} ref={treeRef} /> */}
-        <RectTree data={treeInputData} width={width} ref={treeRef} />
+        {/* <RadialTree data={treeInputData} width={width} ref={treeRef} customNodeMenuItems={menuTest}/> */}
+        <RectTree data={treeInputData} width={width} ref={treeRef} customNodeMenuItems={menuTest}/>
         <button
           onClick={() => {
-            treeRef.current?.setVariableLinks(false);
+            treeRef.current?.setVariableLinks(true);
           }}
         style={{ position: 'absolute', top: '20px', left: '20px' }}
         >

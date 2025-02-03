@@ -196,5 +196,7 @@ export function reroot(node: RadialNode, data: TreeNode): RadialNode {
     }
   }
 
+  console.log(node)
+
   return node;
 }

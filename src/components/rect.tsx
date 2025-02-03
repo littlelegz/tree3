@@ -37,6 +37,8 @@ export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
   onLinkMouseOver,
   onLinkMouseOut,
   customNodeMenuItems,
+  nodeStyler,
+  linkStyler,
 }, ref) => {
   const [variableLinks, setVariableLinks] = useState(true);
   const [displayLeaves, setDisplayLeaves] = useState(true);
@@ -59,16 +61,10 @@ export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
     if (!convertedData) return;
 
     const root = d3.hierarchy<D3Node>(convertedData);
-
-    const cluster = d3.cluster<D3Node>()
-      .nodeSize([10, 20])
-      .separation((a, b) => 2);           // Equal separation between nodes
+    const tree = d3.tree<D3Node>()
 
     // Generate tree layout
-    const treeData = cluster(root);
-    // get the width of tree, find first leaf node, and get x value
-    const width = treeData.leaves()[0].y;
-    setRadius(treeData, 0, width / maxLength(treeData));
+    const treeData = tree(root);
 
     setVarData(treeData);
   }, [data, refreshTrigger]);
@@ -186,6 +182,16 @@ export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
             }
         `);
 
+
+    const cluster = d3.cluster<D3Node>()
+      .nodeSize([10, 20])
+      .separation((a, b) => 2);           // Equal separation between nodes
+
+    // Generate tree layout
+    cluster(varData);
+    // get the width of tree, find first leaf node, and get x value=
+    setRadius(varData, 0, (varData.leaves()[0].y ?? 0) / maxLength(varData));
+
     // Link functions
     function linkhovered(active: boolean): (event: MouseEvent, d: Link<RadialNode>) => void {
       return function (event: MouseEvent, d: Link<RadialNode>): void {
@@ -239,6 +245,11 @@ export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
       .on("mouseout", linkhovered(false))
       .on("click", linkClicked);
 
+    // If given linkStyler, apply it
+    if (linkStyler) {
+      links.each((d) => linkStyler(d.source, d.target));
+    }
+
     // Leaf functions
     function leafhovered(active: boolean): (event: MouseEvent, d: RadialNode) => void {
       return function (event: MouseEvent, d: RadialNode): void {
@@ -260,7 +271,6 @@ export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
     }
 
     function leafClicked(event: MouseEvent, d: RadialNode): void {
-      console.log("Leaf clicked", d);
       onLeafClick?.(event, d);
     }
 
@@ -352,9 +362,7 @@ export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
 
       const MenuContent = (
         <>
-          <div className="menu-header">{d.data.name}
-
-          </div>
+          <div className="menu-header">{d.data.name}</div>
           <div className="menu-buttons">
             <a className="dropdown-item" onClick={() => toggleCollapseClade(d)}>
               Collapse Clade
@@ -377,7 +385,16 @@ export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
               Reroot Here
             </a>
             <div className="dropdown-divider" />
-
+            {/* Custom menu items */}
+            {customNodeMenuItems?.map(item => {
+              if (item.toShow(d)) {
+                return (
+                  <a className="dropdown-item" onClick={() => item.onClick(d)}>
+                    {item.label(d)}
+                  </a>
+                );
+              }
+            })}
           </div>
         </>
       );
@@ -401,7 +418,7 @@ export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
         }, 5);
       }
 
-
+      // Call callback
       onNodeClick?.(event, d);
     }
 
@@ -426,12 +443,16 @@ export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
       .on('mouseenter', showHoverLabel)
       .on('mouseleave', hideHoverLabel);
 
+    // If given nodeStyler, apply it
+    if (nodeStyler) {
+      nodes.each((d) => nodeStyler(d));
+    }
+
     linkExtensionRef.current = linkExtensions as unknown as d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown>;
     linkRef.current = links as unknown as d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown>;
     nodesRef.current = nodes as unknown as d3.Selection<SVGGElement, RadialNode, SVGGElement, unknown>;
     leafLabelsRef.current = leafLabels as unknown as d3.Selection<SVGTextElement, RadialNode, SVGGElement, unknown>;
     svgRef.current = svgMain.node();
-
 
   }, [varData, width]);
 

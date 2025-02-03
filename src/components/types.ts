@@ -1,15 +1,15 @@
 export interface TreeNode {
-    name?: string;
-    length?: number;
-    branchset: TreeNode[];
-    id?: number
-    parent?: TreeNode | null
+  name?: string;
+  length?: number;
+  branchset: TreeNode[];
+  id?: number
+  parent?: TreeNode | null
 }
 
 export interface D3Node {
-    name: string;
-    value: number;
-    children?: D3Node[];
+  name: string;
+  value: number;
+  children?: D3Node[];
 }
 
 export interface RadialTreeProps {
@@ -24,10 +24,13 @@ export interface RadialTreeProps {
   onLinkClick?: (event: MouseEvent, source: RadialNode, target: RadialNode) => void;
   onLinkMouseOver?: (event: MouseEvent, source: RadialNode, target: RadialNode) => void;
   onLinkMouseOut?: (event: MouseEvent, source: RadialNode, target: RadialNode) => void;
-  customNodeMenuItems?: {
-    label: string;
+  customNodeMenuItems?: [{
+    label: (node: RadialNode) => string;
     onClick: (node: RadialNode) => void;
-  }
+    toShow: (node: RadialNode) => boolean;
+  }];
+  nodeStyler?: (node: RadialNode) => void;
+  linkStyler?: (source: RadialNode, target: RadialNode) => void;
 }
 
 // Extend D3's HierarchyNode with radius property
@@ -58,7 +61,7 @@ export interface UnrootedNode extends TreeNode {
   thisId: number;
   thisName: string;
   x: number;
-  y: number; 
+  y: number;
   linkNode: SVGPathElement;
 }
 
@@ -79,5 +82,5 @@ export interface Link<NodeType> {
 
 export interface UnrootedData {
   data: UnrootedNode[];
-  edges:Link<UnrootedNode>[];
+  edges: Link<UnrootedNode>[];
 }

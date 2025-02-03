@@ -35,6 +35,8 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
   onLinkMouseOver,
   onLinkMouseOut,
   customNodeMenuItems,
+  nodeStyler,
+  linkStyler,
 }, ref) => {
   const [variableLinks, setVariableLinks] = useState(false);
   const [displayLeaves, setDisplayLeaves] = useState(true);
@@ -193,6 +195,7 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
 
     const cluster = d3.cluster<D3Node>()
       .size([355, innerRadius]) // [angle to spread nodes, radius]
+      //.nodeSize([.7, 15]) // specifies the size of a leaf node, play around to ensure no label overlap at higher leaf counts
       .separation((a, b) => 1)
 
     cluster(varData); // Places leaves all on same level
@@ -250,6 +253,11 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       .on("mouseover", linkhovered(true))
       .on("mouseout", linkhovered(false))
       .on("click", linkClicked);
+    
+    // If given linkStyler, apply it
+    if (linkStyler) {
+      links.each((d) => linkStyler(d.source, d.target));
+    }
 
     // Leaf functions
     function leafhovered(active: boolean): (event: MouseEvent, d: RadialNode) => void {
@@ -272,7 +280,6 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     }
 
     function leafClicked(event: MouseEvent, d: RadialNode): void {
-      console.log("Leaf clicked", d);
       onLeafClick?.(event, d);
     }
 
@@ -390,7 +397,16 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
               Reroot Here
             </a>
             <div className="dropdown-divider" />
-
+            {/* Custom menu items */}
+            {customNodeMenuItems?.map(item => {
+              if (item.toShow(d)) {
+                return (
+                  <a className="dropdown-item" onClick={() => item.onClick(d)}>
+                    {item.label(d)}
+                  </a>
+                );
+              }
+            })}
           </div>
         </>
       );
@@ -442,16 +458,18 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       .on("mouseout", nodeHovered(false))
       .on('mouseenter', showHoverLabel)
       .on('mouseleave', hideHoverLabel);
+    
+    // If given nodeStyler, apply it
+    if (nodeStyler) {
+      nodes.each((d) => nodeStyler(d));
+    }
 
     linkExtensionRef.current = linkExtensions as unknown as d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown>;
     linkRef.current = links as unknown as d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown>;
     nodesRef.current = nodes as unknown as d3.Selection<SVGGElement, RadialNode, SVGGElement, unknown>;
     leafLabelsRef.current = leafLabels as unknown as d3.Selection<SVGTextElement, RadialNode, SVGGElement, unknown>;
     svgRef.current = svgMain.node();
-
-    // Append SVG to container
-    containerRef.current.appendChild(svgMain.node()!);
-
+    
   }, [varData, width]);
 
   useEffect(() => { // Transition between variable and constant links, and tip alignment
