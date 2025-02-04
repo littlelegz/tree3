@@ -159,7 +159,7 @@ export const UnrootedTree = forwardRef<UnrootedTreeHandle, UnrootedTreeProps>(({
             return function (event, d) {
                 d3.select(this).classed("node--active", active);
                 // Highlight descendants. Disabled for now. TODO how to calculate angles
-                // highlightClade(d, active, svg, scale);
+                highlightClade(d, active, svg, scale);
             };
         }
 
@@ -180,6 +180,40 @@ export const UnrootedTree = forwardRef<UnrootedTreeHandle, UnrootedTreeProps>(({
             .on("mouseover", nodeHovered(true))
             .on("mouseout", nodeHovered(false))
             .on("click", (event, d) => console.log(d));
+
+        const getRotate = (d: UnrootedNode): string => {
+            const x1 = d.parent?.x ?? 0;
+            const y1 = d.parent?.y ?? 0;
+            const x2 = d.x;
+            const y2 = d.y;
+            let angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
+
+            // Flip text if angle is past -90
+            if (angle < -90 || angle > 90) {
+                angle += 180;
+                return `rotate(${angle}, ${d.x * scale}, ${d.y * scale})`;
+            }
+            return `rotate(${angle}, ${d.x * scale}, ${d.y * scale})`;
+        }
+
+        // Draw leaf labels
+        const leafLabels = svg.append("g")
+            .selectAll(".leaf-label")
+            .data(tree.data.filter(d => d.isTip))
+            .join("text")
+            .attr("class", "leaf-label")
+            .attr("x", d => d.x * scale)
+            .attr("y", d => d.y * scale)
+            .attr("text-anchor", d => {
+                const angle = Math.atan2(d.y - (d.parent?.y ?? 0), d.x - (d.parent?.x ?? 0)) * (180 / Math.PI);
+                return (angle < -90 || angle > 90) ? "end" : "start";
+            })
+            .attr("transform", d => getRotate(d))
+            .text(d => d.thisName)
+            .attr("font-size", 5)
+            .attr("fill", "#000");
+
+
 
         // Append SVG to container
         containerRef.current.innerHTML = ''; // Clear existing content
@@ -251,7 +285,7 @@ function fortify(tree: EqAngNode, sort = true): UnrootedNode[] {
                 parentName: null,
                 thisId: node.id,
                 thisName: node.name,
-                branchset: node.branchset.map((x: TreeNode) => x),
+                branchset: node.branchset.map((x: TreeNode) => x as UnrootedNode),
                 length: 0.,
                 isTip: false,
                 x: node.x,
@@ -266,7 +300,7 @@ function fortify(tree: EqAngNode, sort = true): UnrootedNode[] {
                 parentName: node.parent?.name ?? null,
                 thisId: node.id,
                 thisName: node.name,
-                branchset: node.branchset.map((x: TreeNode) => x),
+                branchset: node.branchset.map((x: TreeNode) => x as UnrootedNode),
                 length: node.length,
                 isTip: (node.branchset.length === 0),
                 x: node.x,

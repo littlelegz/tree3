@@ -61,8 +61,9 @@ export interface UnrootedNode extends TreeNode {
   thisId: number;
   thisName: string;
   x: number;
-  y: number;
-  linkNode: SVGPathElement;
+  y: number; 
+  linkNode?: SVGPathElement;
+  linkExtensionNode?: SVGPathElement;
 }
 
 export interface EqAngNode extends TreeNode {

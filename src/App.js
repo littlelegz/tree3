@@ -66,9 +66,9 @@ function App() {
         Variable
       </button>
     </div>
-      {/* <div style={{ width: '100vh', height: '100vh' }} >
+      <div style={{ width: '100vh', height: '100vh' }} >
         <UnrootedTree data={unrootedTree} width={width} height={width} ref={unrootedRef} />
-      </div> */}
+      </div>
     </div >
   );
 }
