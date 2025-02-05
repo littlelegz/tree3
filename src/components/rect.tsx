@@ -46,8 +46,8 @@ export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
   const linkExtensionRef = useRef<d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown>>(null);
   const linkRef = useRef<d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown>>(null);
   const nodesRef = useRef<d3.Selection<SVGGElement, RadialNode, SVGGElement, unknown>>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const leafLabelsRef = useRef<d3.Selection<SVGTextElement, RadialNode, SVGGElement, unknown>>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<d3.Selection<HTMLDivElement, unknown, null, undefined>>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const variableLinksRef = useRef<boolean>(false); // Using this ref so highlighting descendants updates correctly
@@ -389,7 +389,7 @@ export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
             {customNodeMenuItems?.map(item => {
               if (item.toShow(d)) {
                 return (
-                  <a className="dropdown-item" onClick={() => item.onClick(d)}>
+                  <a className="dropdown-item" onClick={() => {item.onClick(d); menu?.remove();}}>
                     {item.label(d)}
                   </a>
                 );

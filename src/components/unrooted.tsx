@@ -1,233 +1,506 @@
-import React, { forwardRef, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
+import { createRoot } from 'react-dom/client';
 import * as d3 from 'd3';
-import { TreeNode, UnrootedData, UnrootedNode, Link, EqAngNode } from './types';
+import { TreeNode, UnrootedData, UnrootedNode, Link, EqAngNode, UnrootedTreeProps } from './types';
 import { highlightClade } from './unrootedUtils.ts';
+import {
+  countLeaves,
+  toggleHighlightDescendantLinks,
+  toggleHighlightTerminalLinks,
+  toggleCollapseClade,
+} from './unrootedUtils.ts';
+import '../css/tree3.css';
+import '../css/menu.css';
 
-interface UnrootedTreeProps {
-    data: any;
-    width?: number;
-    height?: number;
-    scale?: number;
+export interface UnrootedTreeRef {
+  getLinkExtensions: () => d3.Selection<SVGPathElement, Link<UnrootedNode>, SVGGElement, unknown> | null;
+  getLinks: () => d3.Selection<SVGPathElement, Link<UnrootedNode>, SVGGElement, unknown> | null;
+  getInnerNodes: () => d3.Selection<SVGGElement, UnrootedNode, SVGGElement, unknown> | null;
+  getLeaves: () => d3.Selection<SVGTextElement, UnrootedNode, SVGGElement, unknown> | null;
 }
 
-export interface UnrootedTreeHandle {
-    getLeaves: () => any[];
-    getSvg: () => SVGSVGElement | null;
-}
-
-export const UnrootedTree = forwardRef<UnrootedTreeHandle, UnrootedTreeProps>(({
-    data,
-    width = 500,
-    height = 500,
-    scale = 500,
+export const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
+  data,
+  width = 500,
+  scale = 500,
+  onNodeClick,
+  onLinkClick,
+  onLeafClick,
+  onNodeMouseOver,
+  onNodeMouseOut,
+  onLeafMouseOver,
+  onLeafMouseOut,
+  onLinkMouseOver,
+  onLinkMouseOut,
+  customNodeMenuItems,
+  nodeStyler,
+  linkStyler,
 }, ref) => {
-    const svgRef = useRef<SVGSVGElement>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
+  const [displayLeaves, setDisplayLeaves] = useState(true);
+  const linkExtensionRef = useRef<d3.Selection<SVGPathElement, Link<UnrootedNode>, SVGGElement, unknown>>(null);
+  const linkRef = useRef<d3.Selection<SVGPathElement, Link<UnrootedNode>, SVGGElement, unknown>>(null);
+  const nodesRef = useRef<d3.Selection<SVGGElement, UnrootedNode, SVGGElement, unknown>>(null);
+  const leafLabelsRef = useRef<d3.Selection<SVGTextElement, UnrootedNode, SVGGElement, unknown>>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const tooltipRef = useRef<d3.Selection<HTMLDivElement, unknown, null, undefined>>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-    const getBoundingBox = (data: UnrootedData, scale: number) => {
-        const nodes: UnrootedNode[] = data.data;
-        const edges: Link<UnrootedNode>[] = data.edges;
+  // Main helper methods
+  const getBoundingBox = (data: UnrootedData) => { // Used for centering the tree during first render
+    const nodes: UnrootedNode[] = data.data;
+    const edges: Link<UnrootedNode>[] = data.edges;
 
-        let minX = Infinity, maxX = -Infinity;
-        let minY = Infinity, maxY = -Infinity;
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
 
-        // Check nodes
-        nodes.forEach((node: any) => {
-            minX = Math.min(minX, node.x * scale);
-            maxX = Math.max(maxX, node.x * scale);
-            minY = Math.min(minY, node.y * scale);
-            maxY = Math.max(maxY, node.y * scale);
-        });
+    // Check nodes
+    nodes.forEach((node: any) => {
+      minX = Math.min(minX, node.x * scale);
+      maxX = Math.max(maxX, node.x * scale);
+      minY = Math.min(minY, node.y * scale);
+      maxY = Math.max(maxY, node.y * scale);
+    });
 
-        // Check edges
-        edges.forEach((edge: any) => {
-            minX = Math.min(minX, edge.source.x * scale, edge.target.x * scale);
-            maxX = Math.max(maxX, edge.source.x * scale, edge.target.x * scale);
-            minY = Math.min(minY, edge.source.y * scale, edge.target.y * scale);
-            maxY = Math.max(maxY, edge.source.y * scale, edge.target.y * scale);
-        });
+    // Check edges
+    edges.forEach((edge: any) => {
+      minX = Math.min(minX, edge.source.x * scale, edge.target.x * scale);
+      maxX = Math.max(maxX, edge.source.x * scale, edge.target.x * scale);
+      minY = Math.min(minY, edge.source.y * scale, edge.target.y * scale);
+      maxY = Math.max(maxY, edge.source.y * scale, edge.target.y * scale);
+    });
 
-        const padding = 50;
-        return {
-            x: minX - padding,
-            y: minY - padding,
-            width: maxX - minX + padding * 2,
-            height: maxY - minY + padding * 2
-        };
+    const padding = 50;
+    return {
+      x: minX - padding,
+      y: minY - padding,
+      width: maxX - minX + padding * 2,
+      height: maxY - minY + padding * 2
+    };
+  };
+
+  const linkPath = (d: Link<UnrootedNode>): string => {
+    const sourceX = d.source.x * scale;
+    const sourceY = d.source.y * scale;
+    const targetX = d.target.x * scale;
+    const targetY = d.target.y * scale;
+
+    return `M${sourceX},${sourceY}L${targetX},${targetY}`;
+  };
+
+  const linkExtension = (d: Link<UnrootedNode>): string => {
+    if (!d.target.labelElement) return '';
+
+    const sourceX = d.source.x * scale;
+    const sourceY = d.source.y * scale;
+    const targetX = d.target.x * scale;
+    const targetY = d.target.y * scale;
+
+    // Calculate angle and extension direction
+    const angle = Math.atan2(targetY - sourceY, targetX - sourceX);
+
+    // Extend in direction based on text-anchor
+    const extensionLength = 600;
+    const extendedX = targetX + Math.cos(angle) * extensionLength;
+    const extendedY = targetY + Math.sin(angle) * extensionLength;
+
+    return `M${sourceX},${sourceY}L${extendedX},${extendedY}`;
+  };
+
+  // Rotate leafLabels based on angle of the link, and flip for readability
+  const getRotate = (d: UnrootedNode): string => {
+    const x1 = d.parent?.x ?? 0;
+    const y1 = d.parent?.y ?? 0;
+    const x2 = d.x;
+    const y2 = d.y;
+    let angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
+
+    // Flip text if angle is past -90
+    if (angle < -90 || angle > 90) {
+      angle += 180;
+      return `rotate(${angle}, ${d.x * scale}, ${d.y * scale})`;
+    }
+    return `rotate(${angle}, ${d.x * scale}, ${d.y * scale})`;
+  }
+
+  useEffect(() => { // Render tree
+    if (!containerRef.current || !data) return;
+
+    const tree: UnrootedData = {
+      data: [], // UnrootedNode[]
+      edges: [] // Link<UnrootedNode>[]
     };
 
-    const linkPath = (d: Link<UnrootedNode>, scale: number): string => {
-        const sourceX = d.source.x * scale;
-        const sourceY = d.source.y * scale;
-        const targetX = d.target.x * scale;
-        const targetY = d.target.y * scale;
+    // Calculating links and nodes for unrooted tree
+    const eq = fortify(equalAngleLayout(data));
+    tree.data = eq;
+    tree.edges = edges(eq);
 
-        return `M${sourceX},${sourceY}L${targetX},${targetY}`;
-    };
+    // Zoom behavior
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.5, 8]) // Min/max zoom level
+      .on('zoom', (event) => {
+        svgMain.select("g").attr('transform', event.transform);
+      });
 
-    useEffect(() => {
-        if (!data || !containerRef.current) {
-            return;
-        };
+    // Clear existing content
+    d3.select(containerRef.current).selectAll("*").remove();
 
-        // Clear existing content
-        d3.select(containerRef.current).selectAll("*").remove();
+    // Initialize SVG Main container, used for zoom/pan listening
+    const bbox = getBoundingBox(tree);
+    const svgMain = d3.select(containerRef.current).append("svg")
+      .attr("viewBox", `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`)
+      .attr("font-family", "sans-serif")
+      .attr("font-size", 5)
+      .call(zoom);
 
-        const tree: UnrootedData = {
-            data: [],
-            edges: []
-        };
+    // Initialize base SVG group
+    const svg = svgMain.append("g");
 
-        // Calculating links and nodes for unrooted tree
-        const eq = fortify(equalAngleLayout(data));
-        tree.data = eq;
-        tree.edges = edges(eq);
+    // Append styles
+    svg.append("style").text(`
+      .link--active {
+        stroke: #000 !important;
+        stroke-width: 2px;
+      }
 
-        /*
-        * Draw the tree
-        */
+      .link--important {
+        stroke: #00F !important;
+        stroke-width: 1.5px;
+      }
 
-        // Zoom/Pan behavior
-        const zoom = d3.zoom<SVGSVGElement, unknown>()
-            .scaleExtent([0.5, 5]) // Min/max zoom level
-            .on('zoom', (event) => {
-                svgMain.select("g").attr('transform', event.transform);
-            });
+      .link-extension--active {
+        stroke-opacity: .6;
+      }
 
-        // Initialize SVG Main container, used for zoom/pan listening
-        const bbox = getBoundingBox(tree, scale);
-        const svgMain = d3.select(containerRef.current).append("svg")
-            .attr("viewBox", `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`)
-            .attr("font-family", "sans-serif")
-            .attr("font-size", 5)
-            .call(zoom);
+      .label--active {
+        font-weight: bold;
+      }
 
-        // Initialize base SVG group
-        const svg = svgMain.append("g");
+      .node--active {
+        stroke: #003366 !important;
+        fill: #0066cc !important;
+      }
 
-        // Append styles
-        svg.append("style").text(`
-            .link--active {
-              stroke: #000 !important;
-              stroke-width: 1.5px;
-            }
-      
-            .link--important {
-              stroke: #F00 !important;
-              stroke-width: 1.5px;
-            }
-      
-            .link-extension--active {
-              stroke-opacity: .6;
-            }
-      
-            .label--active {
-              font-weight: bold;
-            }
-      
-            .node--active {
-              stroke: #003366 !important;
-              fill: #0066cc !important;
-            }
-      
-            .tooltip-node {
-              position: absolute;
-              background: white;
-              padding: 5px;
-              border: 1px solid #ccc;
-              border-radius: 4px;
-              font-size: 12px;
-              z-index: 10;
-            }
-          `);
+      .link--highlight {
+        stroke: #FF0000 !important;
+        stroke-width: 1.5px;
+      }
 
-        // Draw links
-        const links = svg.append("g")
-            .attr("fill", "none")
-            .attr("stroke", "#444")
-            .selectAll("path")
-            .data(tree.edges)
-            .join("path")
-            .each(function (d: Link<UnrootedNode>) { d.target.linkNode = this as SVGPathElement; })
-            .attr("d", d => linkPath(d, scale))
-            .attr("fill", "none")
-            .attr("stroke-width", 1)
-            .attr("stroke", "black")
-            .on("click", (event, d) => console.log(d));
+      .link--hidden {
+        display: none;
+      }
 
-        function nodeHovered(active: boolean): (event: MouseEvent, d: UnrootedNode) => void {
-            return function (event, d) {
-                d3.select(this).classed("node--active", active);
-                // Highlight descendants. Disabled for now. TODO how to calculate angles
-                highlightClade(d, active, svg, scale);
-            };
+      .node--collapsed {
+        r: 4px !important; 
+        fill: #0066cc !important;
+      }
+
+      .tooltip-node {
+        position: absolute;
+        background: white;
+        padding: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 12px;
+        z-index: 10;
+      }
+    `);
+
+    // Link functions
+    function linkhovered(active: boolean): (event: MouseEvent, d: Link<UnrootedNode>) => void {
+      return function (event: MouseEvent, d: Link<UnrootedNode>): void {
+        if (active) {
+          onLinkMouseOver?.(event, d.source, d.target);
+        } else {
+          onLinkMouseOut?.(event, d.source, d.target);
+        }
+        d3.select(this).classed("link--active", active);
+        if (d.target.linkExtensionNode) {
+          d3.select(d.target.linkExtensionNode).classed("link-extension--active", active).raise();
         }
 
-        // Draw nodes
-        const nodes = svg.append("g")
-            .selectAll(".node")
-            .data(tree.data.filter(d => !d.isTip))
-            .join("g")
-            .attr("class", "inner-node")
-            .attr("transform", d => `translate(${d.x * scale}, ${d.y * scale})`);
+        highlightClade(d.target, active, svg, scale);
+      };
+    }
 
+    function linkClicked(event: MouseEvent, d: Link<UnrootedNode>): void {
+      const linkElement = d3.select(event.target as SVGPathElement);
+      const isHighlighted = linkElement.classed('link--highlight');
 
-        nodes.append("circle")
-            .attr("r", 3)
-            .style("fill", "#fff")
-            .style("stroke", "steelblue")
-            .style("stroke-width", 1.5)
-            .on("mouseover", nodeHovered(true))
-            .on("mouseout", nodeHovered(false))
-            .on("click", (event, d) => console.log(d));
+      linkElement
+        .classed('link--highlight', !isHighlighted)
+        .raise();
+      onLinkClick?.(event, d.source, d.target);
+    }
 
-        const getRotate = (d: UnrootedNode): string => {
-            const x1 = d.parent?.x ?? 0;
-            const y1 = d.parent?.y ?? 0;
-            const x2 = d.x;
-            const y2 = d.y;
-            let angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
+    // Draw links first, then calculate and draw extension
+    const links = svg.append("g")
+      .attr("fill", "none")
+      .attr("stroke", "#444")
+      .selectAll("path")
+      .data(tree.edges)
+      .join("path")
+      .each(function (d: Link<UnrootedNode>) {
+        d.target.linkNode = this as SVGPathElement;
+        if (!d.source.forwardLinkNodes) {
+          d.source.forwardLinkNodes = [];
+        }
+        d.source.forwardLinkNodes.push(this as SVGPathElement);
+      })
+      .attr("d", linkPath)
+      .attr("stroke", (d: Link<UnrootedNode>) => d.target.color || "#000")
+      .style("cursor", "pointer")
+      .on("mouseover", linkhovered(true))
+      .on("mouseout", linkhovered(false))
+      .on("click", linkClicked);
 
-            // Flip text if angle is past -90
-            if (angle < -90 || angle > 90) {
-                angle += 180;
-                return `rotate(${angle}, ${d.x * scale}, ${d.y * scale})`;
-            }
-            return `rotate(${angle}, ${d.x * scale}, ${d.y * scale})`;
+    // If given linkStyler, apply it
+    if (linkStyler) {
+      links.each((d) => linkStyler(d.source, d.target));
+    }
+
+    // Leaf functions
+    function leafhovered(active: boolean): (event: MouseEvent, d: UnrootedNode) => void {
+      return function (event: MouseEvent, d: UnrootedNode): void {
+        if (active) {
+          onLeafMouseOver?.(event, d);
+        } else {
+          onLeafMouseOut?.(event, d);
+        }
+        d3.select(this).classed("label--active", active);
+        if (d.linkExtensionNode) {
+          d3.select(d.linkExtensionNode).classed("link-extension--active", active).raise();
+        }
+        do {
+          if (d.linkNode) {
+            d3.select(d.linkNode).classed("link--active", active).raise();
+          }
+        } while (d.parent && (d = d.parent));
+      };
+    }
+
+    function leafClicked(event: MouseEvent, d: UnrootedNode): void {
+      onLeafClick?.(event, d);
+    }
+
+    // Draw leaf labels
+    const leafLabels = svg.append("g")
+      .selectAll(".leaf-label")
+      .data(tree.data.filter(d => d.isTip))
+      .join("text")
+      .each(function (d: UnrootedNode) { d.labelElement = this as SVGTextElement; })
+      .attr("class", "leaf-label")
+      .attr("x", d => {
+        const angle = Math.atan2(d.y - (d.parent?.y ?? 0), d.x - (d.parent?.x ?? 0)) * (180 / Math.PI);
+        const isEnd = angle < -90 || angle > 90;
+        return d.x * scale + (isEnd ? -600 : 600); // Shifting label away from center depends on it's orientation around center
+      })
+      .attr("y", d => d.y * scale)
+      .attr("dy", ".31em")
+      .attr("transform", d => getRotate(d))
+      .attr("text-anchor", d => {
+        const angle = Math.atan2(d.y - (d.parent?.y ?? 0), d.x - (d.parent?.x ?? 0)) * (180 / Math.PI);
+        return (angle < -90 || angle > 90) ? "end" : "start"; // Text anchor depends on it's so reader can read it
+      })
+      .text(d => d.thisName.replace(/_/g, " "))
+      .on("mouseover", leafhovered(true))
+      .on("mouseout", leafhovered(false))
+      .on("click", leafClicked);
+
+    // Node functions
+    function nodeHovered(active: boolean): (event: MouseEvent, d: UnrootedNode) => void {
+      return function (event, d) {
+        if (active) {
+          onNodeMouseOver?.(event, d);
+        } else {
+          onNodeMouseOut?.(event, d);
+        }
+        d3.select(this).classed("node--active", active);
+
+        // Highlight connected links
+        if (d.linkExtensionNode) {
+          d3.select(d.linkExtensionNode)
+            .classed("link-extension--active", active)
+            .raise();
         }
 
-        // Draw leaf labels
-        const leafLabels = svg.append("g")
-            .selectAll(".leaf-label")
-            .data(tree.data.filter(d => d.isTip))
-            .join("text")
-            .attr("class", "leaf-label")
-            .attr("x", d => d.x * scale)
-            .attr("y", d => d.y * scale)
-            .attr("text-anchor", d => {
-                const angle = Math.atan2(d.y - (d.parent?.y ?? 0), d.x - (d.parent?.x ?? 0)) * (180 / Math.PI);
-                return (angle < -90 || angle > 90) ? "end" : "start";
-            })
-            .attr("transform", d => getRotate(d))
-            .text(d => d.thisName)
-            .attr("font-size", 5)
-            .attr("fill", "#000");
+        // Highlight descendants
+        highlightClade(d, active, svg, scale);
+      };
+    }
+
+    function showHoverLabel(event: MouseEvent, d: UnrootedNode): void {
+      // Clear any existing tooltips
+      d3.selectAll('.tooltip-node').remove();
+
+      tooltipRef.current = d3.select(containerRef.current)
+        .append('div')
+        .attr('class', 'tooltip-node')
+        .style('position', 'fixed')
+        .style('left', `${event.clientX + 10}px`)
+        .style('top', `${event.clientY - 10}px`)
+        .style('opacity', 0)
+        .html(`${d.thisName}<br/>Leaves: ${countLeaves(d)}`);
+
+      tooltipRef.current
+        .transition()
+        .duration(200)
+        .style('opacity', 1);
+    }
+
+    function hideHoverLabel(): void {
+      if (tooltipRef.current) {
+        tooltipRef.current
+          .transition()
+          .duration(200)
+          .style('opacity', 0)
+          .remove();
+      }
+    }
+
+    function nodeClicked(event: MouseEvent, d: UnrootedNode): void {
+      d3.selectAll('.tooltip-node').remove();
+
+      const menu = d3.select(containerRef.current)
+        .append('div')
+        .attr('class', 'menu-node')
+        .style('position', 'fixed')
+        .style('left', `${event.clientX + 10}px`)
+        .style('top', `${event.clientY - 10}px`)
+        .style('opacity', 1)
+        .node();
+
+      const MenuContent = (
+        <>
+          <div className="menu-header">{d.thisName}
+
+          </div>
+          <div className="menu-buttons">
+            <a className="dropdown-item" onClick={() => toggleCollapseClade(d)}>
+              Collapse Clade
+            </a>
+            <div className="dropdown-divider" />
+            <div className="dropdown-header">Toggle Selections</div>
+            <a className="dropdown-item" onClick={() => toggleHighlightDescendantLinks(d)}>
+              Descendant Links
+            </a>
+            <a className="dropdown-item" onClick={() => toggleHighlightTerminalLinks(d)}>
+              Terminal Links
+            </a>
+            <div className="dropdown-divider" />
+            {/* Custom menu items */}
+            {customNodeMenuItems?.map(item => {
+              if (item.toShow(d)) {
+                return (
+                  <a className="dropdown-item" onClick={() => { item.onClick(d); menu?.remove(); }}>
+                    {item.label(d)}
+                  </a>
+                );
+              }
+            })}
+          </div>
+        </>
+      );
+
+      if (menu) {
+        const root = createRoot(menu);
+        root.render(MenuContent);
+
+        setTimeout(() => {
+          const handleClickOutside = (e: MouseEvent) => {
+            if (menu && !menu.contains(e.target as Node)) {
+              try {
+                menu.remove();
+              } catch (e) { // When rerooting, tree display is refreshed and menu is removed
+                console.error(e);
+              }
+              window.removeEventListener('click', handleClickOutside);
+            }
+          };
+          window.addEventListener('click', handleClickOutside);
+        }, 5);
+      }
+
+      console.log("node clicked: ", d);
+
+      onNodeClick?.(event, d);
+    }
+
+    // Draw nodes
+    const nodes = svg.append("g")
+      .selectAll(".node")
+      .data(tree.data.filter(d => !d.isTip && d.parent)) // Don't draw leaf nodes, and skip root
+      .join("g")
+      .each(function (d: UnrootedNode) { d.nodeElement = this as SVGGElement; })
+      .attr("class", "inner-node")
+      .attr("transform", d => `translate(${d.x * scale}, ${d.y * scale})`);
 
 
+    nodes.append("circle")
+      .attr("r", 3)
+      .style("fill", "#fff")
+      .style("stroke", "steelblue")
+      .style("stroke-width", 1.5)
+      .on("click", nodeClicked)
+      .on("mouseover", nodeHovered(true))
+      .on("mouseout", nodeHovered(false))
+      .on('mouseenter', showHoverLabel)
+      .on('mouseleave', hideHoverLabel);
 
-        // Append SVG to container
-        containerRef.current.innerHTML = ''; // Clear existing content
-        containerRef.current.appendChild(svgMain.node()!);
+    // Draw link extensions
+    const linkExtensions = svg.append("g")
+      .attr("fill", "none")
+      .attr("stroke", "#000")
+      .attr("stroke-opacity", 0.25)
+      .attr("stroke-dasharray", "4,4")
+      .selectAll("path")
+      .data(tree.edges.filter(d => d.target.branchset.length === 0)) // targets nodes without children
+      .join("path")
+      .each(function (d: Link<UnrootedNode>) { d.target.linkExtensionNode = this as SVGPathElement; })
+      .attr("d", linkExtension);
 
-    }, [data, containerRef]);
+    linkExtensionRef.current = linkExtensions as unknown as d3.Selection<SVGPathElement, Link<UnrootedNode>, SVGGElement, unknown>;
+    linkRef.current = links as unknown as d3.Selection<SVGPathElement, Link<UnrootedNode>, SVGGElement, unknown>;
+    nodesRef.current = nodes as unknown as d3.Selection<SVGGElement, UnrootedNode, SVGGElement, unknown>;
+    leafLabelsRef.current = leafLabels as unknown as d3.Selection<SVGTextElement, UnrootedNode, SVGGElement, unknown>;
+    svgRef.current = svgMain.node();
 
-    return (
-        <div ref={containerRef} style={{
-            border: "1px solid #ccc",
-            borderRadius: "4px"
-        }}>
-        </div>
-    );
+    // Append SVG to container
+    containerRef.current.innerHTML = ''; // Clear existing content
+    containerRef.current.appendChild(svgMain.node()!);
+
+  }, [data, containerRef, refreshTrigger]);
+
+  useEffect(() => { // Toggle leaf label visibility
+    leafLabelsRef.current?.style("display", displayLeaves ? "block" : "none");
+    linkExtensionRef.current?.style("display", displayLeaves ? "block" : "none");
+  }, [displayLeaves]);
+
+  const recenterView = () => {
+    const svg = d3.select(containerRef.current).select('svg').select('g');
+
+    svg.transition()
+      .duration(750)
+      .attr('transform', "translate(0,0)");
+  };
+
+  useImperativeHandle(ref, () => ({
+    getLinkExtensions: () => linkExtensionRef.current,
+    getLinks: () => linkRef.current,
+    getInnerNodes: () => nodesRef.current,
+    getLeaves: () => leafLabelsRef.current,
+    setDisplayLeaves: (value: boolean) => setDisplayLeaves(value),
+    recenterView: () => recenterView(),
+    refresh: () => setRefreshTrigger(prev => prev + 1),
+  }));
+  return (
+    <div ref={containerRef} style={{
+      border: "1px solid #ccc",
+      borderRadius: "4px"
+    }}>
+    </div>
+  );
 });
 
 
@@ -246,27 +519,27 @@ export const UnrootedTree = forwardRef<UnrootedTreeHandle, UnrootedTreeProps>(({
  */
 
 function edges(df: UnrootedNode[]) {
-    var result: Link<UnrootedNode>[] = [],
-        parent: UnrootedNode | undefined;
+  var result: Link<UnrootedNode>[] = [],
+    parent: UnrootedNode | undefined;
 
-    // make sure data frame is sorted
-    df.sort(function (a, b) {
-        return a.thisId - b.thisId;
-    });
+  // make sure data frame is sorted
+  df.sort(function (a, b) {
+    return a.thisId - b.thisId;
+  });
 
-    for (const row of df) {
-        if (row.parentId === null) {
-            continue; // skip the root
-        }
-        parent = df[row.parentId];
-        if (parent === null || parent === undefined) continue;
-        var pair = {
-            source: df[row.thisId],
-            target: parent
-        };
-        result.push(pair);
+  for (const row of df) {
+    if (row.parentId === null) {
+      continue; // skip the root
     }
-    return result;
+    parent = df[row.parentId];
+    if (parent === null || parent === undefined) continue;
+    var pair = {
+      source: parent,
+      target: df[row.thisId]
+    };
+    result.push(pair);
+  }
+  return result;
 }
 
 /**
@@ -275,47 +548,47 @@ function edges(df: UnrootedNode[]) {
  * this is akin to a "phylo" object in R.
  */
 function fortify(tree: EqAngNode, sort = true): UnrootedNode[] {
-    var df: UnrootedNode[] = [];
+  var df: UnrootedNode[] = [];
 
-    for (const node of preorder(tree)) {
-        if (node.parent === null) {
-            df.push({
-                parent: null,
-                parentId: null,
-                parentName: null,
-                thisId: node.id,
-                thisName: node.name,
-                branchset: node.branchset.map((x: TreeNode) => x as UnrootedNode),
-                length: 0.,
-                isTip: false,
-                x: node.x,
-                y: node.y,
-                angle: node.angle
-            } as unknown as UnrootedNode)
-        }
-        else {
-            df.push({
-                parent: node.parent as UnrootedNode,
-                parentId: node.parent?.id ?? null,
-                parentName: node.parent?.name ?? null,
-                thisId: node.id,
-                thisName: node.name,
-                branchset: node.branchset.map((x: TreeNode) => x as UnrootedNode),
-                length: node.length,
-                isTip: (node.branchset.length === 0),
-                x: node.x,
-                y: node.y,
-                angle: node.angle
-            } as unknown as UnrootedNode)
-        }
+  for (const node of preorder(tree)) {
+    if (node.parent === null) {
+      df.push({
+        parent: null,
+        parentId: null,
+        parentName: null,
+        thisId: node.id,
+        thisName: node.name,
+        branchset: node.branchset.map((x: TreeNode) => x as UnrootedNode),
+        length: 0.,
+        isTip: false,
+        x: node.x,
+        y: node.y,
+        angle: node.angle
+      } as unknown as UnrootedNode)
     }
+    else {
+      df.push({
+        parent: node.parent as UnrootedNode,
+        parentId: node.parent?.id ?? null,
+        parentName: node.parent?.name ?? null,
+        thisId: node.id,
+        thisName: node.name,
+        branchset: node.branchset.map((x: TreeNode) => x as UnrootedNode),
+        length: node.length,
+        isTip: (node.branchset.length === 0),
+        x: node.x,
+        y: node.y,
+        angle: node.angle
+      } as unknown as UnrootedNode)
+    }
+  }
 
-    if (sort) {
-        df = df.sort(function (a, b) {
-            return a.thisId - b.thisId;
-        })
-    }
-    return (df);
+  if (sort) {
+    df = df.sort(function (a, b) {
+      return a.thisId - b.thisId;
+    })
+  }
+  return (df);
 }
 
 /**
@@ -323,11 +596,11 @@ function fortify(tree: EqAngNode, sort = true): UnrootedNode[] {
  */
 
 function preorder(node: EqAngNode, list: EqAngNode[] = []): EqAngNode[] {
-    list.push(node);
-    for (var i = 0; i < node.branchset.length; i++) {
-        list = preorder(node.branchset[i] as EqAngNode, list);
-    }
-    return list;
+  list.push(node);
+  for (var i = 0; i < node.branchset.length; i++) {
+    list = preorder(node.branchset[i] as EqAngNode, list);
+  }
+  return list;
 }
 
 
@@ -337,11 +610,11 @@ function preorder(node: EqAngNode, list: EqAngNode[] = []): EqAngNode[] {
  */
 
 function numTips(thisnode: EqAngNode): number {
-    var result = 0;
-    for (const node of levelorder(thisnode)) {
-        if (node.branchset.length === 0) result++;
-    }
-    return (result);
+  var result = 0;
+  for (const node of levelorder(thisnode)) {
+    if (node.branchset.length === 0) result++;
+  }
+  return (result);
 }
 
 /**
@@ -350,63 +623,63 @@ function numTips(thisnode: EqAngNode): number {
  */
 
 function levelorder(root: EqAngNode): EqAngNode[] {
-    // aka breadth-first search
-    var queue: EqAngNode[] = [root],
-        result: EqAngNode[] = [],
-        curnode: EqAngNode | undefined;
+  // aka breadth-first search
+  var queue: EqAngNode[] = [root],
+    result: EqAngNode[] = [],
+    curnode: EqAngNode | undefined;
 
-    while (queue.length > 0) {
-        curnode = queue.pop();
-        if (curnode) {
-            result.push(curnode);
-            for (const child of curnode.branchset) {
-                queue.push(child as EqAngNode);
-            }
-        }
+  while (queue.length > 0) {
+    curnode = queue.pop();
+    if (curnode) {
+      result.push(curnode);
+      for (const child of curnode.branchset) {
+        queue.push(child as EqAngNode);
+      }
     }
-    return (result);
+  }
+  return (result);
 }
 
 function equalAngleLayout(node: TreeNode): EqAngNode {
-    // Cast node to EqAngNode to add required properties
-    const eqNode = node as EqAngNode;
+  // Cast node to EqAngNode to add required properties
+  const eqNode = node as EqAngNode;
 
-    if (eqNode.parent === null) {
-        // node is root
-        eqNode.start = 0.;  // guarantees no arcs overlap 0
-        eqNode.end = 2.; // *pi
-        eqNode.angle = 0.;  // irrelevant
-        eqNode.ntips = numTips(eqNode);
-        eqNode.x = 0;
-        eqNode.y = 0;
-    }
+  if (eqNode.parent === null) {
+    // node is root
+    eqNode.start = 0.;  // guarantees no arcs overlap 0
+    eqNode.end = 2.; // *pi
+    eqNode.angle = 0.;  // irrelevant
+    eqNode.ntips = numTips(eqNode);
+    eqNode.x = 0;
+    eqNode.y = 0;
+  }
 
-    var child: EqAngNode,
-        arc: number,
-        lastStart = eqNode.start;
+  var child: EqAngNode,
+    arc: number,
+    lastStart = eqNode.start;
 
-    for (var i = 0; i < eqNode.branchset.length; i++) {
-        // the child of the current node
-        child = eqNode.branchset[i] as EqAngNode;
-        // the number of tips the child node has
-        child.ntips = numTips(child);
+  for (var i = 0; i < eqNode.branchset.length; i++) {
+    // the child of the current node
+    child = eqNode.branchset[i] as EqAngNode;
+    // the number of tips the child node has
+    child.ntips = numTips(child);
 
-        // assign proportion of arc to this child
-        arc = (eqNode.end - eqNode.start) * child.ntips / eqNode.ntips;
-        child.start = lastStart;
-        child.end = child.start + arc;
+    // assign proportion of arc to this child
+    arc = (eqNode.end - eqNode.start) * child.ntips / eqNode.ntips;
+    child.start = lastStart;
+    child.end = child.start + arc;
 
-        // bisect the arc
-        child.angle = child.start + (child.end - child.start) / 2.;
-        lastStart = child.end;
+    // bisect the arc
+    child.angle = child.start + (child.end - child.start) / 2.;
+    lastStart = child.end;
 
-        // map to coordinates
-        child.x = eqNode.x + (child.length ?? 0) * Math.sin(child.angle * Math.PI);
-        child.y = eqNode.y + (child.length ?? 0) * Math.cos(child.angle * Math.PI);
+    // map to coordinates
+    child.x = eqNode.x + (child.length ?? 0) * Math.sin(child.angle * Math.PI);
+    child.y = eqNode.y + (child.length ?? 0) * Math.cos(child.angle * Math.PI);
 
-        // climb up
-        equalAngleLayout(child);
-    }
-    // had to add this!
-    return eqNode;
+    // climb up
+    equalAngleLayout(child);
+  }
+  // had to add this!
+  return eqNode;
 }

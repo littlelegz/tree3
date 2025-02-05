@@ -44,8 +44,8 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
   const linkExtensionRef = useRef<d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown>>(null);
   const linkRef = useRef<d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown>>(null);
   const nodesRef = useRef<d3.Selection<SVGGElement, RadialNode, SVGGElement, unknown>>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const leafLabelsRef = useRef<d3.Selection<SVGTextElement, RadialNode, SVGGElement, unknown>>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<d3.Selection<HTMLDivElement, unknown, null, undefined>>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const variableLinksRef = useRef<boolean>(false); // Using this ref so highlighting descendants updates correctly
@@ -55,6 +55,7 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
   const outerRadius = width / 2;
   const innerRadius = outerRadius - 170;
 
+  // Main helper methods
   useEffect(() => {
     if (!data) return;
 
@@ -135,12 +136,13 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     d3.select(containerRef.current).selectAll("*").remove();
 
     // Make SVG element
-    const svgMain: d3.Selection<SVGSVGElement, unknown, null, undefined> = d3.select(containerRef.current).append("svg")
+    const svgMain = d3.select(containerRef.current).append("svg")
       .attr("viewBox", [-outerRadius, -outerRadius, width, width])
       .attr("font-family", "sans-serif")
       .attr("font-size", 5)
       .call(zoom);
 
+    // Initialize base SVG group
     const svg = svgMain.append("g");
 
     // Styles TODO: Move to CSS
@@ -229,17 +231,6 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     }
 
     // Draw links
-    const linkExtensions = svg.append("g")
-      .attr("fill", "none")
-      .attr("stroke", "#000")
-      .attr("stroke-opacity", 0.25)
-      .attr("stroke-dasharray", "4,4")
-      .selectAll("path")
-      .data(varData.links().filter(d => !d.target.children)) // targets nodes without children
-      .join("path")
-      .each(function (d: Link<RadialNode>) { d.target.linkExtensionNode = this as SVGPathElement; })
-      .attr("d", linkExtensionConstant);
-
     const links = svg.append("g")
       .attr("fill", "none")
       .attr("stroke", "#444")
@@ -253,7 +244,18 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       .on("mouseover", linkhovered(true))
       .on("mouseout", linkhovered(false))
       .on("click", linkClicked);
-    
+
+    const linkExtensions = svg.append("g")
+      .attr("fill", "none")
+      .attr("stroke", "#000")
+      .attr("stroke-opacity", 0.25)
+      .attr("stroke-dasharray", "4,4")
+      .selectAll("path")
+      .data(varData.links().filter(d => !d.target.children)) // targets nodes without children
+      .join("path")
+      .each(function (d: Link<RadialNode>) { d.target.linkExtensionNode = this as SVGPathElement; })
+      .attr("d", linkExtensionConstant);
+
     // If given linkStyler, apply it
     if (linkStyler) {
       links.each((d) => linkStyler(d.source, d.target));
@@ -401,7 +403,7 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
             {customNodeMenuItems?.map(item => {
               if (item.toShow(d)) {
                 return (
-                  <a className="dropdown-item" onClick={() => item.onClick(d)}>
+                  <a className="dropdown-item" onClick={() => { item.onClick(d); menu?.remove(); }}>
                     {item.label(d)}
                   </a>
                 );
@@ -458,7 +460,7 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       .on("mouseout", nodeHovered(false))
       .on('mouseenter', showHoverLabel)
       .on('mouseleave', hideHoverLabel);
-    
+
     // If given nodeStyler, apply it
     if (nodeStyler) {
       nodes.each((d) => nodeStyler(d));
@@ -469,7 +471,7 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     nodesRef.current = nodes as unknown as d3.Selection<SVGGElement, RadialNode, SVGGElement, unknown>;
     leafLabelsRef.current = leafLabels as unknown as d3.Selection<SVGTextElement, RadialNode, SVGGElement, unknown>;
     svgRef.current = svgMain.node();
-    
+
   }, [varData, width]);
 
   useEffect(() => { // Transition between variable and constant links, and tip alignment

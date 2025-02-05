@@ -33,6 +33,28 @@ export interface RadialTreeProps {
   linkStyler?: (source: RadialNode, target: RadialNode) => void;
 }
 
+export interface UnrootedTreeProps {
+  data: any;
+  width?: number;
+  scale?: number;
+  onNodeClick?: (event: MouseEvent, node: UnrootedNode) => void;
+  onNodeMouseOver?: (event: MouseEvent, node: UnrootedNode) => void;
+  onNodeMouseOut?: (event: MouseEvent, node: UnrootedNode) => void;
+  onLeafClick?: (event: MouseEvent, node: UnrootedNode) => void;
+  onLeafMouseOver?: (event: MouseEvent, node: UnrootedNode) => void;
+  onLeafMouseOut?: (event: MouseEvent, node: UnrootedNode) => void;
+  onLinkClick?: (event: MouseEvent, source: UnrootedNode, target: UnrootedNode) => void;
+  onLinkMouseOver?: (event: MouseEvent, source: UnrootedNode, target: UnrootedNode) => void;
+  onLinkMouseOut?: (event: MouseEvent, source: UnrootedNode, target: UnrootedNode) => void;
+  customNodeMenuItems?: [{
+    label: (node: UnrootedNode) => string;
+    onClick: (node: UnrootedNode) => void;
+    toShow: (node: UnrootedNode) => boolean;
+  }];
+  nodeStyler?: (node: UnrootedNode) => void;
+  linkStyler?: (source: UnrootedNode, target: UnrootedNode) => void;
+}
+
 // Extend D3's HierarchyNode with radius property
 export interface RadialNode extends d3.HierarchyNode<D3Node> {
   radius?: number;
@@ -61,9 +83,13 @@ export interface UnrootedNode extends TreeNode {
   thisId: number;
   thisName: string;
   x: number;
-  y: number; 
+  y: number;
   linkNode?: SVGPathElement;
   linkExtensionNode?: SVGPathElement;
+  nodeElement?: SVGGElement;
+  labelElement?: SVGTextElement;
+  color?: string;
+  forwardLinkNodes?: SVGPathElement[]; // Due how layout is calculated, updating linkNode does not reflect in children under branchset. So here we store the forward links
 }
 
 export interface EqAngNode extends TreeNode {

@@ -40,7 +40,7 @@ function App() {
     },
     onClick: function (node) {
       if (node['compare']) {
-        console.log('compare');
+        console.log(node);
         node['compare'] = false;
       } else {
         console.log('not compare');
