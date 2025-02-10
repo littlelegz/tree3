@@ -13,9 +13,11 @@ import {
 } from './radialUtils.ts';
 import {
   highlightDescendantsRect,
+  getNodePosition,
+  findAndZoom
 } from './rectUtils.ts';
-import '../css/tree3.css';
-import '../css/menu.css';
+import './tree3.css';
+import './menu.css';
 
 export interface RectTreeRef {
   getLinkExtensions: () => d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown> | null;
@@ -39,6 +41,7 @@ export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
   customNodeMenuItems,
   nodeStyler,
   linkStyler,
+  leafStyler
 }, ref) => {
   const [variableLinks, setVariableLinks] = useState(true);
   const [displayLeaves, setDisplayLeaves] = useState(true);
@@ -46,8 +49,8 @@ export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
   const linkExtensionRef = useRef<d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown>>(null);
   const linkRef = useRef<d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown>>(null);
   const nodesRef = useRef<d3.Selection<SVGGElement, RadialNode, SVGGElement, unknown>>(null);
-  const leafLabelsRef = useRef<d3.Selection<SVGTextElement, RadialNode, SVGGElement, unknown>>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const leafLabelsRef = useRef<d3.Selection<SVGTextElement, RadialNode, SVGGElement, unknown>>(null);
   const tooltipRef = useRef<d3.Selection<HTMLDivElement, unknown, null, undefined>>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const variableLinksRef = useRef<boolean>(false); // Using this ref so highlighting descendants updates correctly
@@ -221,6 +224,7 @@ export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
 
     // Draw links
     const linkExtensions = svg.append("g")
+      .attr("class", "link-extensions")
       .attr("fill", "none")
       .attr("stroke", "#000")
       .attr("stroke-opacity", 0.25)
@@ -232,6 +236,7 @@ export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
       .attr("d", linkExtensionVariable);
 
     const links = svg.append("g")
+      .attr("class", "links")
       .attr("fill", "none")
       .attr("stroke", "#444")
       .selectAll("path")
@@ -276,6 +281,7 @@ export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
 
     // Draw leaf labels
     const leafLabels = svg.append("g")
+      .attr("class", "leaves")
       .selectAll("text")
       .data(varData.leaves())
       .join("text")
@@ -286,6 +292,11 @@ export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
       .on("mouseover", leafhovered(true))
       .on("mouseout", leafhovered(false))
       .on("click", leafClicked);
+
+    // If given leafStyler, apply it
+    if (leafStyler) {
+      leafLabels.each((d) => leafStyler(d));
+    }
 
     // Node functions
     function nodeHovered(active: boolean): (event: MouseEvent, d: RadialNode) => void {
@@ -389,7 +400,7 @@ export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
             {customNodeMenuItems?.map(item => {
               if (item.toShow(d)) {
                 return (
-                  <a className="dropdown-item" onClick={() => {item.onClick(d); menu?.remove();}}>
+                  <a className="dropdown-item" onClick={() => { item.onClick(d); menu?.remove(); }}>
                     {item.label(d)}
                   </a>
                 );
@@ -424,6 +435,7 @@ export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
 
     // Create nodes
     const nodes = svg.append("g")
+      .attr("class", "nodes")
       .selectAll(".node")
       .data(varData.descendants().filter(d => d.children))
       .join("g")
@@ -498,7 +510,7 @@ export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
 
     svg.transition()
       .duration(750)
-      .attr('transform', "translate(0,0)");
+      .attr('transform', "translate(50,0)");
   };
 
   useImperativeHandle(ref, () => ({
@@ -506,11 +518,24 @@ export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
     getLinks: () => linkRef.current,
     getInnerNodes: () => nodesRef.current,
     getLeaves: () => leafLabelsRef.current,
+    getSvgRef: () => svgRef.current,
     setVariableLinks: (value: boolean) => setVariableLinks(value),
     setDisplayLeaves: (value: boolean) => setDisplayLeaves(value),
     setTipAlign: (value: boolean) => setTipAlign(value),
     recenterView: () => recenterView(),
     refresh: () => setRefreshTrigger(prev => prev + 1),
+    getNodePosition: (name: string) => {
+      if (svgRef.current) {
+        return getNodePosition(name, d3.select(svgRef.current));
+      }
+    },
+    getRoot: () => varData,
+    getContainer: () => containerRef.current,
+    findAndZoom: (name: string, container: React.MutableRefObject<HTMLDivElement>) => {
+      if (svgRef.current) {
+        findAndZoom(name, d3.select(svgRef.current), container);
+      }
+    }
   }));
 
   return (
@@ -518,9 +543,7 @@ export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
       <div ref={containerRef} style={{
         width: "100%",
         height: "100%",
-        overflow: "hidden",
-        border: "1px solid #ccc",
-        borderRadius: "4px"
+        overflow: "show"
       }} />
     </div>
   );

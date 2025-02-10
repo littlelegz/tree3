@@ -184,7 +184,7 @@ export function reroot(node: RadialNode, data: TreeNode): RadialNode {
             currentNode = parentNode;
             parentNode = parentNode.parent || null;
           }
-          
+
           const d3FormatRoot = convertToD3Format(newRoot);
           if (!d3FormatRoot) {
             throw new Error("Failed to convert new root to D3 format");
@@ -199,4 +199,69 @@ export function reroot(node: RadialNode, data: TreeNode): RadialNode {
   console.log(node)
 
   return node;
+}
+
+export function findAndZoom(name: string, svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, container: React.MutableRefObject<HTMLDivElement>, variable: Boolean): void {
+  // Find node with name in tree
+  const node = svg.select('g.nodes')
+    .selectAll<SVGGElement, RadialNode>('g.inner-node')
+    .filter(d => d.data.name === name);
+
+  if (!node.empty()) {
+    const nodeElement = node.node();
+    const nodeData = node.data()[0];
+
+    const distance = variable ? (nodeData.radius ?? 0) : (nodeData.y ?? 0);
+    const x = (nodeData.x ?? 0) * Math.PI / 180 ; // Convert degrees to radians
+
+    // Convert polar to cartesian coordinates
+    const cartX = distance * Math.cos(x);
+    const cartY = distance * Math.sin(x);
+
+    const centerOffsetX = container.current.clientWidth / 2;
+    const centerOffsetY = container.current.clientHeight / 2; // This offset is based on #tree-div h/w. This is improper. TODO: Fix centering
+
+    const zoom = d3.zoom().on("zoom", (event) => {
+      svg.select("g").attr("transform", event.transform);
+    });
+
+    svg.transition()
+      .duration(750)
+      .call(zoom.transform as any, d3.zoomIdentity
+        .translate(-cartY, cartX - centerOffsetY)
+        .scale(1));
+
+    const circle = d3.select(nodeElement).select('circle');
+    const currRadius = circle.attr("r");
+    const currColor = circle.style("fill");
+    const newRadius = (parseFloat(currRadius) * 2).toString();
+
+
+    circle.transition()
+      .delay(1000)
+      .style("fill", "red")
+      .style("r", newRadius)
+      .transition()
+      .duration(750)
+      .style("fill", currColor)
+      .style("r", currRadius)
+      .transition()
+      .duration(750)
+      .style("fill", "red")
+      .style("r", newRadius)
+      .transition()
+      .duration(750)
+      .style("fill", currColor)
+      .style("r", currRadius);
+
+  }
+
+  // Find leaf with name in tree
+  const leaf = svg.select('g.leaves')
+    .selectAll<SVGGElement, RadialNode>('g.leaf')
+    .filter(d => d.data.name === name);
+
+  if (!leaf.empty()) {
+    console.log("Found leaf", leaf);
+  }
 }

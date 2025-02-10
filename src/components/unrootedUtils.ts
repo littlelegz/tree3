@@ -19,15 +19,15 @@ const getAllLeafCoords = (node: UnrootedNode, scale: number): Array<{ x: number,
   const extendedX = targetX + Math.cos(angle) * extensionLength;
   const extendedY = targetY + Math.sin(angle) * extensionLength;
 
-  if (node.branchset.length === 0) {
+  if (node.children && node.children.length === 0) {
     coords.push({
       x: extendedX,
       y: extendedY
     });
   }
 
-  if (node.branchset) {
-    (node.branchset as UnrootedNode[]).forEach(child => {
+  if (node.children) {
+    (node.children as UnrootedNode[]).forEach(child => {
       coords.push(...getAllLeafCoords(child, scale));
     });
   }
@@ -36,10 +36,10 @@ const getAllLeafCoords = (node: UnrootedNode, scale: number): Array<{ x: number,
 };
 
 export const countLeaves = (node: UnrootedNode): number => {
-  if (!node.branchset || node.branchset.length === 0) {
+  if (!node.children || node.children.length === 0) {
     return 1;
   }
-  return node.branchset.reduce((sum: number, child: any) => sum + countLeaves(child), 0);
+  return node.children.reduce((sum: number, child: any) => sum + countLeaves(child), 0);
 };
 
 export function highlightClade(node: UnrootedNode, active: boolean, svg: d3.Selection<SVGGElement, unknown, null, undefined>, scale: number): void {
@@ -76,7 +76,7 @@ export function highlightClade(node: UnrootedNode, active: boolean, svg: d3.Sele
   }
 }
 
-// mapChildren is different from UnrootedNodes. Children are stored in branchset as TreeNodes (without elements data), and in 
+// mapChildren is different from UnrootedNodes. Children are stored in children as TreeNodes (without elements data), and in 
 // forwardLinkNodes as SVGPathElements. We need to recurse through the forwardLinkNodes to get the children.
 function mapChildren(node: UnrootedNode, callback: (node: UnrootedNode) => void): void {
   if (node.forwardLinkNodes) {
@@ -99,8 +99,8 @@ export function toggleCollapseClade(node: UnrootedNode): void {
   if (node.nodeElement) {
     const isHidden = d3.select(node.nodeElement).select("circle").classed('node--collapsed');
     d3.select(node.nodeElement).select("circle").classed('node--collapsed', !isHidden);
-    if (node.branchset) {
-      node.branchset.forEach(child => {
+    if (node.children) {
+      node.children.forEach(child => {
         mapChildren(child as UnrootedNode, child => {
           toggleElementClass(child.linkNode as SVGElement, 'link--hidden', !isHidden);
           toggleElementClass(child.nodeElement as SVGElement, 'link--hidden', !isHidden);
@@ -131,14 +131,95 @@ export function toggleHighlightDescendantLinks(node: UnrootedNode): void {
 
 export function toggleHighlightTerminalLinks(node: UnrootedNode): void {
   // Recurse through all children and highlight links
-  if (node.branchset) {
-    node.branchset.forEach(child => {
+  if (node.children) {
+    node.children.forEach(child => {
       mapChildren(child as UnrootedNode, child => {
-        if (!child.branchset && child.linkNode) {
+        if (child.children.length === 0 && child.linkNode) {
           const isHighlighted = d3.select(child.linkNode).classed('link--highlight');
           d3.select(child.linkNode).classed('link--highlight', !isHighlighted);
         }
       });
     });
+  }
+}
+
+// TODO, this centering function doesn't work as expected
+export function findAndZoom(name: string, 
+  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, 
+  container: React.MutableRefObject<HTMLDivElement>, 
+  scale: number, 
+  bbox: { x: number, y: number, width: number, height: number }
+): void {
+  // Find node with name in tree
+  const node = svg.select('g.nodes')
+    .selectAll<SVGGElement, UnrootedNode>('g.inner-node')
+    .filter(d => d.data.name === name);
+
+  if (!node.empty()) {
+    const nodeElement = node.node();
+    const svgElement = svg.node();
+    
+    if (!nodeElement || !svgElement) {
+      return;
+    }
+
+    // Get bounding boxes relative to viewport
+    const nodeBounds = nodeElement.getBoundingClientRect();
+    const svgBounds = svgElement.getBoundingClientRect();
+
+    console.log(svgBounds);
+    
+    // Calculate position relative to SVG
+    const relativeX = nodeBounds.x - svgBounds.x;
+    const relativeY = nodeBounds.y - svgBounds.y;
+
+    console.log("Node position relative to SVG:", relativeX, relativeY);
+    
+    // Center the node
+    const centerX = container.current.clientWidth/2 - relativeX;
+    const centerY = container.current.clientHeight/2 - relativeY;
+    
+    const zoom = d3.zoom().on("zoom", (event) => {
+      svg.select("g").attr("transform", event.transform);
+    });
+    
+    svg.transition()
+       .duration(750)
+       .call(zoom.transform as any, d3.zoomIdentity
+         .translate(centerX, centerY)
+         .scale(1));
+
+    const circle = d3.select(nodeElement).select('circle');
+    const currRadius = circle.attr("r");
+    const currColor = circle.style("fill");
+    const newRadius = (parseFloat(currRadius) * 2).toString();
+
+
+    circle.transition()
+      .delay(1000)
+      .style("fill", "red")
+      .style("r", newRadius)
+      .transition()
+      .duration(750)
+      .style("fill", currColor)
+      .style("r", currRadius)
+      .transition()
+      .duration(750)
+      .style("fill", "red")
+      .style("r", newRadius)
+      .transition()
+      .duration(750)
+      .style("fill", currColor)
+      .style("r", currRadius);
+
+  }
+
+  // Find leaf with name in tree
+  const leaf = svg.select('g.leaves')
+    .selectAll<SVGGElement, UnrootedNode>('g.leaf')
+    .filter(d => d.data.name === name);
+
+  if (!leaf.empty()) {
+    console.log("Found leaf", leaf);
   }
 }

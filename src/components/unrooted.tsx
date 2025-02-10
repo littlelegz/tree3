@@ -4,13 +4,17 @@ import * as d3 from 'd3';
 import { TreeNode, UnrootedData, UnrootedNode, Link, EqAngNode, UnrootedTreeProps } from './types';
 import { highlightClade } from './unrootedUtils.ts';
 import {
+  readTree
+} from './utils.ts';
+import {
   countLeaves,
   toggleHighlightDescendantLinks,
   toggleHighlightTerminalLinks,
   toggleCollapseClade,
+  findAndZoom
 } from './unrootedUtils.ts';
-import '../css/tree3.css';
-import '../css/menu.css';
+import './tree3.css';
+import './menu.css';
 
 export interface UnrootedTreeRef {
   getLinkExtensions: () => d3.Selection<SVGPathElement, Link<UnrootedNode>, SVGGElement, unknown> | null;
@@ -35,6 +39,7 @@ export const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
   customNodeMenuItems,
   nodeStyler,
   linkStyler,
+  leafStyler
 }, ref) => {
   const [displayLeaves, setDisplayLeaves] = useState(true);
   const linkExtensionRef = useRef<d3.Selection<SVGPathElement, Link<UnrootedNode>, SVGGElement, unknown>>(null);
@@ -45,6 +50,7 @@ export const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
   const tooltipRef = useRef<d3.Selection<HTMLDivElement, unknown, null, undefined>>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [varData, setVarData] = useState<UnrootedData | null>(null);
 
   // Main helper methods
   const getBoundingBox = (data: UnrootedData) => { // Used for centering the tree during first render
@@ -132,9 +138,11 @@ export const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     };
 
     // Calculating links and nodes for unrooted tree
-    const eq = fortify(equalAngleLayout(data));
+    const eq = fortify(equalAngleLayout(readTree(data)));
     tree.data = eq;
     tree.edges = edges(eq);
+
+    setVarData(tree);
 
     // Zoom behavior
     const zoom = d3.zoom<SVGSVGElement, unknown>()
@@ -155,7 +163,7 @@ export const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
       .call(zoom);
 
     // Initialize base SVG group
-    const svg = svgMain.append("g");
+    const svg = svgMain.append("g").attr("class", "tree");
 
     // Append styles
     svg.append("style").text(`
@@ -236,6 +244,7 @@ export const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
 
     // Draw links first, then calculate and draw extension
     const links = svg.append("g")
+      .attr("class", "links")
       .attr("fill", "none")
       .attr("stroke", "#444")
       .selectAll("path")
@@ -286,6 +295,7 @@ export const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
 
     // Draw leaf labels
     const leafLabels = svg.append("g")
+      .attr("class", "leaves")
       .selectAll(".leaf-label")
       .data(tree.data.filter(d => d.isTip))
       .join("text")
@@ -308,6 +318,10 @@ export const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
       .on("mouseout", leafhovered(false))
       .on("click", leafClicked);
 
+    // If given leafStyler, apply it
+    if (leafStyler) {
+      leafLabels.each((d) => leafStyler(d));
+    }
     // Node functions
     function nodeHovered(active: boolean): (event: MouseEvent, d: UnrootedNode) => void {
       return function (event, d) {
@@ -422,13 +436,12 @@ export const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
         }, 5);
       }
 
-      console.log("node clicked: ", d);
-
       onNodeClick?.(event, d);
     }
 
     // Draw nodes
     const nodes = svg.append("g")
+      .attr("class", "nodes")
       .selectAll(".node")
       .data(tree.data.filter(d => !d.isTip && d.parent)) // Don't draw leaf nodes, and skip root
       .join("g")
@@ -436,7 +449,7 @@ export const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
       .attr("class", "inner-node")
       .attr("transform", d => `translate(${d.x * scale}, ${d.y * scale})`);
 
-
+    // Add circles for nodes
     nodes.append("circle")
       .attr("r", 3)
       .style("fill", "#fff")
@@ -448,14 +461,20 @@ export const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
       .on('mouseenter', showHoverLabel)
       .on('mouseleave', hideHoverLabel);
 
+    // If given nodeStyler, apply it
+    if (nodeStyler) {
+      nodes.each((d) => nodeStyler(d));
+    }
+
     // Draw link extensions
     const linkExtensions = svg.append("g")
+      .attr("class", "link-extensions")
       .attr("fill", "none")
       .attr("stroke", "#000")
       .attr("stroke-opacity", 0.25)
       .attr("stroke-dasharray", "4,4")
       .selectAll("path")
-      .data(tree.edges.filter(d => d.target.branchset.length === 0)) // targets nodes without children
+      .data(tree.edges.filter(d => d.target.children.length === 0)) // targets nodes without children
       .join("path")
       .each(function (d: Link<UnrootedNode>) { d.target.linkExtensionNode = this as SVGPathElement; })
       .attr("d", linkExtension);
@@ -493,12 +512,22 @@ export const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     setDisplayLeaves: (value: boolean) => setDisplayLeaves(value),
     recenterView: () => recenterView(),
     refresh: () => setRefreshTrigger(prev => prev + 1),
+    getData: () => varData,
+    getContainer: () => containerRef.current,
+    findAndZoom: (name: string, container: React.MutableRefObject<HTMLDivElement>) => {
+      if (svgRef.current && varData) {
+        findAndZoom(name, d3.select(svgRef.current), container, scale, getBoundingBox(varData));
+      }
+    },
   }));
+
   return (
-    <div ref={containerRef} style={{
-      border: "1px solid #ccc",
-      borderRadius: "4px"
-    }}>
+    <div className="radial-tree">
+      <div ref={containerRef} style={{
+        width: "100%",
+        height: "100%",
+        overflow: "show",
+      }} />
     </div>
   );
 });
@@ -546,42 +575,49 @@ function edges(df: UnrootedNode[]) {
  * Convert parsed Newick tree from readTree() into data
  * frame.
  * this is akin to a "phylo" object in R.
+ * EDIT: Instead of preorder traversal, use recursive function
+ * so children and parents and linked.
  */
 function fortify(tree: EqAngNode, sort = true): UnrootedNode[] {
   var df: UnrootedNode[] = [];
 
-  for (const node of preorder(tree)) {
-    if (node.parent === null) {
-      df.push({
-        parent: null,
-        parentId: null,
-        parentName: null,
-        thisId: node.id,
-        thisName: node.name,
-        branchset: node.branchset.map((x: TreeNode) => x as UnrootedNode),
-        length: 0.,
-        isTip: false,
-        x: node.x,
-        y: node.y,
-        angle: node.angle
-      } as unknown as UnrootedNode)
+  function convertNode(node: EqAngNode): UnrootedNode {
+    // Convert current node
+    const unrootedNode: UnrootedNode = {
+      parent: node.parent as UnrootedNode,
+      parentId: node.parent?.id ?? null,
+      parentName: node.parent?.name ?? null,
+      thisId: node.id ?? -1,
+      thisName: node.name ?? '',
+      children: [],
+      length: node.length ?? 0,
+      isTip: node.branchset?.length === 0,
+      x: node.x,
+      y: node.y,
+      angle: node.angle,
+      data: {
+        name: node.name ?? '',
+        value: node.length ?? 0
+      },
+      branchset: node.branchset ?? []
+    };
+
+    // Recursively convert children
+    if (node.branchset) {
+      unrootedNode.children = node.branchset.map(child => {
+        const convertedChild = convertNode(child as EqAngNode);
+        convertedChild.parent = unrootedNode;
+        df.push(convertedChild);
+        return convertedChild;
+      });
     }
-    else {
-      df.push({
-        parent: node.parent as UnrootedNode,
-        parentId: node.parent?.id ?? null,
-        parentName: node.parent?.name ?? null,
-        thisId: node.id,
-        thisName: node.name,
-        branchset: node.branchset.map((x: TreeNode) => x as UnrootedNode),
-        length: node.length,
-        isTip: (node.branchset.length === 0),
-        x: node.x,
-        y: node.y,
-        angle: node.angle
-      } as unknown as UnrootedNode)
-    }
+
+    return unrootedNode;
   }
+
+  // Start conversion from root
+  const rootNode = convertNode(tree);
+  df.push(rootNode);
 
   if (sort) {
     df = df.sort(function (a, b) {
