@@ -13,14 +13,22 @@ import {
   reroot,
   findAndZoom 
 } from './radialUtils.ts';
-import './tree3.css';
-import './menu.css';
+import '../css/tree3.css';
+import '../css/menu.css';
 
 export interface RadialTreeRef {
   getLinkExtensions: () => d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown> | null;
   getLinks: () => d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown> | null;
-  getInnerNodes: () => d3.Selection<SVGGElement, RadialNode, SVGGElement, unknown> | null;
+  getNodes: () => d3.Selection<SVGGElement, RadialNode, SVGGElement, unknown> | null;
   getLeaves: () => d3.Selection<SVGTextElement, RadialNode, SVGGElement, unknown> | null;
+  setVariableLinks: (value: boolean) => void;
+  setDisplayLeaves: (value: boolean) => void;
+  setTipAlign: (value: boolean) => void;
+  recenterView: () => void;
+  refresh: () => void;
+  getRoot: () => RadialNode | null;
+  getContainer: () => HTMLDivElement | null;
+  findAndZoom: (name: string, container: React.MutableRefObject<HTMLDivElement>) => void;
 }
 
 export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
@@ -531,7 +539,7 @@ export const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
   useImperativeHandle(ref, () => ({
     getLinkExtensions: () => linkExtensionRef.current,
     getLinks: () => linkRef.current,
-    getInnerNodes: () => nodesRef.current,
+    getNodes: () => nodesRef.current,
     getLeaves: () => leafLabelsRef.current,
     setVariableLinks: (value: boolean) => setVariableLinks(value),
     setDisplayLeaves: (value: boolean) => setDisplayLeaves(value),

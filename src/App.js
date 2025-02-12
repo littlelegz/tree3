@@ -1,13 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import './App.css';
-import { readTree } from './components/utils.ts';
 import { RadialTree } from './components/radial.tsx';
 import { UnrootedTree } from './components/unrooted.tsx';
 import { RectTree } from './components/rect.tsx';
 
 function App() {
   const [treeInputData, setTreeData] = useState(null);
-  const [unrootedTree, setUnrootedTree] = useState(null);
   const treeRef = useRef(null);
   const unrootedRef = useRef(null);
 
@@ -19,8 +17,6 @@ function App() {
       try {
         const response = await fetch(process.env.PUBLIC_URL + '/asr.tree');
         const newickString = await response.text();
-        const parsedTree = readTree(newickString);
-        setUnrootedTree(parsedTree);
         setTreeData(newickString);
       } catch (error) {
         console.error('Error loading tree:', error);
@@ -67,7 +63,7 @@ function App() {
       </button>
     </div>
       <div style={{ width: '100vh', height: '100vh' }} >
-        <UnrootedTree data={unrootedTree} width={width} height={width} ref={unrootedRef} />
+        <UnrootedTree data={treeInputData} width={width} height={width} ref={unrootedRef} />
       </div>
     </div >
   );
