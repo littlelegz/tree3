@@ -31,13 +31,24 @@ TODO
   `function (event, source node, target node)` Click, mouse enter, and mouse leave callback functions for links
 
 ### customNodeMenuItems
-  [
+Array of objects with the following properties:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `label` | `function(node) => string` | Determines the label of the custom option |
+| `onClick` | `function(onClick)` | Callback function when option is selected |
+| `toShow` | `function(node) => boolean` | Determines whether to show this option for the given node |
+
+Example:
+```javascript
+customNodeMenuItems={[
   {
-  `label function (node) => string` Determines the label of the custom option
-  `onClick function (onClick)` Callback 
-  `toShow function (node) => boolean` Determines whether to show this option for the given node
+    label: (node) => "Custom Action",
+    onClick: (node) => console.log("Clicked on node:", node),
+    toShow: (node) => node.data.someProperty === true
   }
-  ]
+]}
+```
 
 ### nodeStyler, leafStyler
   `function (node)` Callback used for custom rendering options
