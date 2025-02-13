@@ -29,7 +29,7 @@ export interface UnrootedTreeRef {
   findAndZoom: (name: string, container: React.MutableRefObject<HTMLDivElement>) => void;
 }
 
-export const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
+const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
   data,
   width = 500,
   scale = 500,
@@ -223,7 +223,7 @@ export const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
 
     // Link functions
     function linkhovered(active: boolean): (event: MouseEvent, d: Link<UnrootedNode>) => void {
-      return function (event: MouseEvent, d: Link<UnrootedNode>): void {
+      return function (this: SVGPathElement, event: MouseEvent, d: Link<UnrootedNode>): void {
         if (active) {
           onLinkMouseOver?.(event, d.source, d.target);
         } else {
@@ -277,7 +277,7 @@ export const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
 
     // Leaf functions
     function leafhovered(active: boolean): (event: MouseEvent, d: UnrootedNode) => void {
-      return function (event: MouseEvent, d: UnrootedNode): void {
+      return function (this: SVGPathElement, event: MouseEvent, d: UnrootedNode): void {
         if (active) {
           onLeafMouseOver?.(event, d);
         } else {
@@ -330,7 +330,7 @@ export const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     }
     // Node functions
     function nodeHovered(active: boolean): (event: MouseEvent, d: UnrootedNode) => void {
-      return function (event, d) {
+      return function (this: SVGGElement, event, d) {
         if (active) {
           onNodeMouseOver?.(event, d);
         } else {
@@ -725,3 +725,5 @@ function equalAngleLayout(node: TreeNode): EqAngNode {
   // had to add this!
   return eqNode;
 }
+
+export default UnrootedTree;

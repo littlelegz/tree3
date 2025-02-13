@@ -93,3 +93,27 @@ These functions can be accessed through the useRef React hook of the tree elemen
 ### findAndZoom (query)
   Pans the svg to center the node or leaf. (unstable)
 
+## Install
+
+```bash
+npm install --save example
+```
+
+## Usage
+
+```tsx
+import React, { Component } from 'react'
+
+import MyComponent from 'example'
+import 'example/dist/index.css'
+
+class Example extends Component {
+  render() {
+    return <MyComponent />
+  }
+}
+```
+
+## License
+
+MIT © [](https://github.com/)

@@ -33,7 +33,7 @@ export interface RectTreeRef {
   findAndZoom: (name: string, container: React.MutableRefObject<HTMLDivElement>) => void
 }
 
-export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
+const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
   data,
   width = 1000,
   onNodeClick,
@@ -204,7 +204,7 @@ export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
 
     // Link functions
     function linkhovered(active: boolean): (event: MouseEvent, d: Link<RadialNode>) => void {
-      return function (event: MouseEvent, d: Link<RadialNode>): void {
+      return function (this: SVGPathElement, event: MouseEvent, d: Link<RadialNode>): void {
         if (active) {
           onLinkMouseOver?.(event, d.source, d.target);
         } else {
@@ -264,7 +264,7 @@ export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
 
     // Leaf functions
     function leafhovered(active: boolean): (event: MouseEvent, d: RadialNode) => void {
-      return function (event: MouseEvent, d: RadialNode): void {
+      return function (this: SVGPathElement, event: MouseEvent, d: RadialNode): void {
         if (active) {
           onLeafMouseOver?.(event, d);
         } else {
@@ -307,7 +307,7 @@ export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
 
     // Node functions
     function nodeHovered(active: boolean): (event: MouseEvent, d: RadialNode) => void {
-      return function (event, d) {
+      return function (this: SVGGElement, event, d) {
         if (active) {
           onNodeMouseOver?.(event, d);
         } else {
@@ -549,3 +549,5 @@ export const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
     </div>
   );
 });
+
+export default RectTree;
