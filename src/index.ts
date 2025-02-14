@@ -4,9 +4,17 @@ export { default as RadialTree } from './components/radial';
 export { default as UnrootedTree } from './components/unrooted';
 
 // Types
-export * from './components/types';
+export {
+    Link as Link,
+    RadialNode as RadialNode,
+    RectNode as RectNode,
+    UnrootedNode as UnrootedNode,
+} from './components/types';
 
-export * from './components/utils';
+export {
+    selectAllLeaves as selectAllLeaves,
+    selectAllNodes as selectAllNodes,
+} from './components/utils';
 
 export function add(a: number, b: number): number {
     return a + b;

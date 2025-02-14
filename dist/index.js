@@ -4395,6 +4395,31 @@ function readTree(text) {
     curnode.id = nodeId;
     return (root);
 }
+function selectAllLeaves(node) {
+    var leaves = [];
+    function traverse(currentNode) {
+        if (!currentNode.children) {
+            leaves.push(currentNode);
+        }
+        else {
+            var children = currentNode.children || [];
+            children.forEach(function (child) { return traverse(child); });
+        }
+    }
+    traverse(node);
+    return leaves;
+}
+function selectAllNodes(node) {
+    var nodes = [];
+    function traverse(currentNode) {
+        nodes.push(currentNode);
+        if (currentNode.children) {
+            currentNode.children.forEach(function (child) { return traverse(child); });
+        }
+    }
+    traverse(node);
+    return nodes;
+}
 
 function getBoundingBox$1(node, isVariable) {
     var _a, _b, _c, _d;
@@ -6210,5 +6235,5 @@ function add(a, b) {
     return a + b;
 }
 
-export { RadialTree, RectTree, UnrootedTree, add };
+export { RadialTree, RectTree, UnrootedTree, add, selectAllLeaves, selectAllNodes };
 //# sourceMappingURL=index.js.map
