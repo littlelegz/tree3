@@ -167,13 +167,13 @@ export function findAndZoom(name: string,
     const nodeBounds = nodeElement.getBoundingClientRect();
     const svgBounds = svgElement.getBoundingClientRect();
 
-    console.log(svgBounds);
+    // console.log(svgBounds);
     
     // Calculate position relative to SVG
     const relativeX = nodeBounds.x - svgBounds.x;
     const relativeY = nodeBounds.y - svgBounds.y;
 
-    console.log("Node position relative to SVG:", relativeX, relativeY);
+    // console.log("Node position relative to SVG:", relativeX, relativeY);
     
     // Center the node
     const centerX = container.current.clientWidth/2 - relativeX;

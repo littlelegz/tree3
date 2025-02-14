@@ -66,7 +66,7 @@ export function getNodePosition(name: string, svg: d3.Selection<SVGSVGElement, u
   return [0, 0];
 }
 
-export function findAndZoom(name: string, svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, container: React.MutableRefObject<HTMLDivElement>): void {
+export function findAndZoom(name: string, svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, container: React.MutableRefObject<HTMLDivElement>, variable: boolean): void {
   const node = svg.select('g.nodes')
     .selectAll<SVGGElement, RadialNode>('g.inner-node')
     .filter(d => d.data.name === name);
@@ -76,10 +76,10 @@ export function findAndZoom(name: string, svg: d3.Selection<SVGSVGElement, unkno
     const nodeData = node.data()[0];
 
     const x = nodeData.x ?? 0;
-    const y = nodeData.y ?? 0;
+    const y = variable ? (nodeData.y ?? 0) : (nodeData.radius ?? 0);
 
-    const centerOffsetX = container.current.clientWidth / 2;
-    const centerOffsetY = container.current.clientHeight / 2;
+    const containerWidth = container.current.clientWidth;
+    const containerHeight = container.current.clientHeight;
 
     const zoom = d3.zoom().on("zoom", (event) => {
       svg.select("g").attr("transform", event.transform);
@@ -88,7 +88,7 @@ export function findAndZoom(name: string, svg: d3.Selection<SVGSVGElement, unkno
     svg.transition()
       .duration(750)
       .call(zoom.transform as any, d3.zoomIdentity
-        .translate(-y + centerOffsetX, -x + centerOffsetY)
+        .translate(-y + 491, -x + 436) // Hard coding these values is not ideal. TODO: Fix centering
         .scale(1));
 
     const circle = d3.select(nodeElement).select('circle');

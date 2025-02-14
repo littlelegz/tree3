@@ -219,7 +219,7 @@ export function findAndZoom(name: string, svg: d3.Selection<SVGSVGElement, unkno
     const cartY = distance * Math.sin(x);
 
     const centerOffsetX = container.current.clientWidth / 2;
-    const centerOffsetY = container.current.clientHeight / 2; // This offset is based on #tree-div h/w. This is improper. TODO: Fix centering
+    const centerOffsetY = container.current.clientHeight / 4; // This offset is based on #tree-div h/w. This is improper. TODO: Fix centering
 
     const zoom = d3.zoom().on("zoom", (event) => {
       svg.select("g").attr("transform", event.transform);
@@ -228,7 +228,7 @@ export function findAndZoom(name: string, svg: d3.Selection<SVGSVGElement, unkno
     svg.transition()
       .duration(750)
       .call(zoom.transform as any, d3.zoomIdentity
-        .translate(-cartY, cartX - centerOffsetY)
+        .translate(-cartY, cartX - centerOffsetY) 
         .scale(1));
 
     const circle = d3.select(nodeElement).select('circle');

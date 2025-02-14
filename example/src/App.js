@@ -13,7 +13,8 @@ function App() {
   const radialContainerRef = useRef(null);
   const rectContainerRef = useRef(null);
   const unrootedContainerRef = useRef(null);
-  const [searchValue, setSearchValue] = useState("");
+  const [searchValue, setSearchValue] = useState("Node10");
+  const [variableLinks, setVariableLinks] = useState(false);
 
   useEffect(() => {
     fetch('/asr.tree')
@@ -23,8 +24,15 @@ function App() {
       });
   }, []);
 
+  useEffect(() => {
+    if (rectRef?.current && radialRef?.current) {
+      rectRef.current.setVariableLinks(variableLinks);
+      radialRef.current.setVariableLinks(variableLinks);
+    }
+  }, [variableLinks]);
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', margin: '10px' }}>
       <div className="App" style={{ display: 'flex', flexDirection: 'row' }}>
         <div ref={radialContainerRef} style={{ width: "33%", height: "500px", border: "1px solid black", overflow: "hidden" }}>
           <RadialTree data={tree} ref={radialRef} />
@@ -51,6 +59,9 @@ function App() {
           }
         }}>
           Search
+        </button>
+        <button onClick={() => setVariableLinks(prev => !prev)}>
+          Variable Links
         </button>
       </div>
     </div>

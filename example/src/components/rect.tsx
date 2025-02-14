@@ -30,7 +30,7 @@ export interface RectTreeRef {
   refresh: () => void;
   getRoot: () => RadialNode | null;
   getContainer: () => HTMLDivElement | null;
-  findAndZoom: (name: string, container: React.MutableRefObject<HTMLDivElement>) => void
+  findAndZoom: (name: string, container: React.MutableRefObject<HTMLDivElement>, variable: boolean) => void
 }
 
 const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
@@ -534,7 +534,7 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
     getContainer: () => containerRef.current,
     findAndZoom: (name: string, container: React.MutableRefObject<HTMLDivElement>) => {
       if (svgRef.current) {
-        findAndZoom(name, d3.select(svgRef.current), container);
+        findAndZoom(name, d3.select(svgRef.current), container, variableLinks);
       }
     }
   }));
