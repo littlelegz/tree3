@@ -528,7 +528,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
   }));
 
   return (
-    <div className="radial-tree">
+    <div className="radial-tree" style={{ width: "100%", height: "100%" }}>
       <div ref={containerRef} style={{
         width: "100%",
         height: "100%",
