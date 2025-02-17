@@ -150,26 +150,35 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
 
     setVarData(tree);
 
-    // Zoom behavior
-    const zoom = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.5, 8]) // Min/max zoom level
-      .on('zoom', (event) => {
-        svgMain.select("g").attr('transform', event.transform);
-      });
-
     // Clear existing content
     d3.select(containerRef.current).selectAll("*").remove();
 
     // Initialize SVG Main container, used for zoom/pan listening
     const bbox = getBoundingBox(tree);
+    const initialScale = 0.5;
+    const translateX = (containerRef.current.clientWidth - bbox.width * initialScale) / 2 - bbox.x * initialScale;
+    const translateY = (containerRef.current.clientHeight - bbox.height * initialScale) / 2 - bbox.y * initialScale;
+
+    const initialTransform = d3.zoomIdentity.translate(translateX, translateY).scale(initialScale);
+
     const svgMain = d3.select(containerRef.current).append("svg")
-      .attr("viewBox", `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`)
+      //.attr("viewBox", `0 0 ${bbox.width} ${bbox.height}`)
+      .attr("width", "100%")
+      .attr("height", "100%")
       .attr("font-family", "sans-serif")
-      .attr("font-size", 5)
-      .call(zoom);
+      .attr("font-size", 5);
 
     // Initialize base SVG group
-    const svg = svgMain.append("g").attr("class", "tree");
+    const svg = svgMain.append("g").attr("class", "tree")
+      .attr("transform", `translate(${translateX}, ${translateY})`);
+
+    // Apply initial transform
+    svgMain.call(d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.5, 8]) // Min/max zoom level
+      .on('zoom', (event) => {
+        svg.attr('transform', event.transform);
+      })
+      .transform, initialTransform);
 
     // Append styles
     svg.append("style").text(`
@@ -393,9 +402,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
 
       const MenuContent = (
         <>
-          <div className="menu-header">{d.thisName}
-
-          </div>
+          <div className="menu-header">{d.thisName}</div>
           <div className="menu-buttons">
             <a className="dropdown-item" onClick={() => toggleCollapseClade(d)}>
               Collapse Clade

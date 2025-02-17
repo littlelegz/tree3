@@ -11,7 +11,7 @@ import {
   toggleHighlightLinkToRoot,
   toggleCollapseClade,
   reroot,
-  findAndZoom 
+  findAndZoom
 } from './radialUtils.ts';
 import '../css/tree3.css';
 import '../css/menu.css';
@@ -146,7 +146,9 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
 
     // Make SVG element
     const svgMain: d3.Selection<SVGSVGElement, unknown, null, undefined> = d3.select(containerRef.current).append("svg")
-      .attr("viewBox", [-outerRadius, -outerRadius, width, width])
+      //.attr("viewBox", [-outerRadius, -outerRadius, width, width])
+      .attr("width", "100%") // Set width to 100%
+      .attr("height", "100%") // Set height to 100%
       .attr("font-family", "sans-serif")
       .attr("font-size", 5)
       .call(zoom);
@@ -488,6 +490,10 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     leafLabelsRef.current = leafLabels as unknown as d3.Selection<SVGTextElement, RadialNode, SVGGElement, unknown>;
     svgRef.current = svgMain.node();
 
+    // Finally, zoom to center
+    if (svgRef.current && containerRef.current) {
+      findAndZoom(varData.data.name, d3.select(svgRef.current), containerRef as React.MutableRefObject<HTMLDivElement>, variableLinks);
+    }
   }, [varData, width]);
 
   useEffect(() => { // Transition between variable and constant links, and tip alignment

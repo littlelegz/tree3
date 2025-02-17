@@ -144,10 +144,10 @@ export function toggleHighlightTerminalLinks(node: UnrootedNode): void {
 }
 
 // TODO, this centering function doesn't work as expected
-export function findAndZoom(name: string, 
-  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, 
-  container: React.MutableRefObject<HTMLDivElement>, 
-  scale: number, 
+export function findAndZoom(name: string,
+  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  container: React.MutableRefObject<HTMLDivElement>,
+  scale: number,
   bbox: { x: number, y: number, width: number, height: number }
 ): void {
   // Find node with name in tree
@@ -157,37 +157,30 @@ export function findAndZoom(name: string,
 
   if (!node.empty()) {
     const nodeElement = node.node();
-    const svgElement = svg.node();
-    
-    if (!nodeElement || !svgElement) {
+    const nodeData = node.data()[0];
+
+    if (!nodeElement) {
       return;
     }
 
-    // Get bounding boxes relative to viewport
-    const nodeBounds = nodeElement.getBoundingClientRect();
-    const svgBounds = svgElement.getBoundingClientRect();
+    const x = (nodeData.x ?? 0) * scale;
+    const y = (nodeData.y ?? 0) * scale;
 
-    // console.log(svgBounds);
-    
-    // Calculate position relative to SVG
-    const relativeX = nodeBounds.x - svgBounds.x;
-    const relativeY = nodeBounds.y - svgBounds.y;
+    console.log("Node position: ", x, y);
 
-    // console.log("Node position relative to SVG:", relativeX, relativeY);
-    
     // Center the node
-    const centerX = container.current.clientWidth/2 - relativeX;
-    const centerY = container.current.clientHeight/2 - relativeY;
-    
+    const centerOffestX = container.current.clientWidth / 2;
+    const centerOffestY = container.current.clientHeight / 2;
+
     const zoom = d3.zoom().on("zoom", (event) => {
       svg.select("g").attr("transform", event.transform);
     });
-    
+
     svg.transition()
-       .duration(750)
-       .call(zoom.transform as any, d3.zoomIdentity
-         .translate(centerX, centerY)
-         .scale(1));
+      .duration(750)
+      .call(zoom.transform as any, d3.zoomIdentity
+        .translate(-x + centerOffestX, -y + centerOffestY)
+        .scale(1));
 
     const circle = d3.select(nodeElement).select('circle');
     const currRadius = circle.attr("r");

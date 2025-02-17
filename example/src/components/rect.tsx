@@ -475,6 +475,10 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
     leafLabelsRef.current = leafLabels as unknown as d3.Selection<SVGTextElement, RadialNode, SVGGElement, unknown>;
     svgRef.current = svgMain.node();
 
+    // Finally, zoom to center
+    if (svgRef.current && containerRef.current) {
+      findAndZoom(varData.data.name, d3.select(svgRef.current), containerRef as React.MutableRefObject<HTMLDivElement>, variableLinks);
+    }
   }, [varData, width]);
 
   useEffect(() => { // Transition between variable and constant links, and tip alignment
