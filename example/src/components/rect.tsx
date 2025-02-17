@@ -242,7 +242,7 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
       .data(varData.links().filter(d => !d.target.children)) // targets nodes without children
       .join("path")
       .each(function (d: Link<RadialNode>) { d.target.linkExtensionNode = this as SVGPathElement; })
-      .attr("d", linkExtensionVariable);
+      .attr("d", linkExtensionConstant);
 
     const links = svg.append("g")
       .attr("class", "links")

@@ -30,7 +30,7 @@ export interface RectTreeRef {
   refresh: () => void;
   getRoot: () => RadialNode | null;
   getContainer: () => HTMLDivElement | null;
-  findAndZoom: (name: string, container: React.MutableRefObject<HTMLDivElement>) => void
+  findAndZoom: (name: string, container: React.MutableRefObject<HTMLDivElement>, variable: boolean) => void
 }
 
 const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
@@ -50,7 +50,7 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
   linkStyler,
   leafStyler
 }, ref) => {
-  const [variableLinks, setVariableLinks] = useState(true);
+  const [variableLinks, setVariableLinks] = useState(false);
   const [displayLeaves, setDisplayLeaves] = useState(true);
   const [tipAlign, setTipAlign] = useState(false);
   const linkExtensionRef = useRef<d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown>>(null);
@@ -134,7 +134,9 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
     // Setup SVG
     const svgMain = d3.select(containerRef.current)
       .append("svg")
-      .attr("viewBox", [0, 0, width, width])
+      //.attr("viewBox", [0, 0, width, width])
+      .attr("width", "100%") // Set width to 100%
+      .attr("height", "100%") // Set height to 100%
       .attr("font-family", "sans-serif")
       .attr("font-size", 10)
       .call(zoom);
@@ -240,7 +242,7 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
       .data(varData.links().filter(d => !d.target.children)) // targets nodes without children
       .join("path")
       .each(function (d: Link<RadialNode>) { d.target.linkExtensionNode = this as SVGPathElement; })
-      .attr("d", linkExtensionVariable);
+      .attr("d", linkExtensionConstant);
 
     const links = svg.append("g")
       .attr("class", "links")
@@ -250,7 +252,7 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
       .data(varData.links())
       .join("path")
       .each(function (d: Link<RadialNode>) { d.target.linkNode = this as SVGPathElement; })
-      .attr("d", linkVariable)
+      .attr("d", linkConstant)
       .attr("stroke", (d: Link<RadialNode>) => d.target.color || "#000")
       .style("cursor", "pointer")
       .on("mouseover", linkhovered(true))
@@ -448,7 +450,7 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
       .join("g")
       .each(function (d: RadialNode) { d.nodeElement = this as SVGGElement; })
       .attr("class", "inner-node")
-      .attr("transform", d => `translate(${d.radius},${d.x})`);
+      .attr("transform", d => `translate(${d.y},${d.x})`);
 
     // Add circles for nodes
     nodes.append("circle")
@@ -473,6 +475,10 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
     leafLabelsRef.current = leafLabels as unknown as d3.Selection<SVGTextElement, RadialNode, SVGGElement, unknown>;
     svgRef.current = svgMain.node();
 
+    // Finally, zoom to center
+    if (svgRef.current && containerRef.current) {
+      findAndZoom(varData.data.name, d3.select(svgRef.current), containerRef as React.MutableRefObject<HTMLDivElement>, variableLinks);
+    }
   }, [varData, width]);
 
   useEffect(() => { // Transition between variable and constant links, and tip alignment
@@ -534,13 +540,13 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
     getContainer: () => containerRef.current,
     findAndZoom: (name: string, container: React.MutableRefObject<HTMLDivElement>) => {
       if (svgRef.current) {
-        findAndZoom(name, d3.select(svgRef.current), container);
+        findAndZoom(name, d3.select(svgRef.current), container, variableLinks);
       }
     }
   }));
 
   return (
-    <div className="radial-tree">
+    <div className="radial-tree" style={{ width: "100%", height: "100%" }}>
       <div ref={containerRef} style={{
         width: "100%",
         height: "100%",

@@ -228,7 +228,7 @@ export function findAndZoom(name: string, svg: d3.Selection<SVGSVGElement, unkno
     svg.transition()
       .duration(750)
       .call(zoom.transform as any, d3.zoomIdentity
-        .translate(-cartY, cartX - centerOffsetY)
+        .translate(-cartY + centerOffsetX, cartX + centerOffsetY) 
         .scale(1));
 
     const circle = d3.select(nodeElement).select('circle');

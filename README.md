@@ -93,10 +93,13 @@ These functions can be accessed through the useRef React hook of the tree elemen
 ### findAndZoom (query)
   Pans the svg to center the node or leaf. (unstable)
 
-## Install
+## Running example
 
 ```bash
-npm install --save example
+cd /tree3
+npm i 
+npm run build:example
+npm run start:example
 ```
 
 ## Usage
@@ -104,12 +107,13 @@ npm install --save example
 ```tsx
 import React, { Component } from 'react'
 
-import MyComponent from 'example'
-import 'example/dist/index.css'
+import { RadialTree } from 'tree3-react'
+
+const newickData = "(((A:0.2, B:0.3):0.3,(C:0.5, D:0.3):0.2):0.3, E:0.7):1.0;"
 
 class Example extends Component {
   render() {
-    return <MyComponent />
+    return <RadialTree data={newickData}/>
   }
 }
 ```
