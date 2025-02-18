@@ -269,8 +269,6 @@ export function findAndZoom(name: string, svg: d3.Selection<SVGSVGElement, unkno
       if (lastLCoords) {
         const [_, x, y] = lastLCoords;
 
-        console.log(x, y);
-
         // Center the node
         const centerOffestX = container.current.clientWidth / 2;
         const centerOffestY = container.current.clientHeight / 2;

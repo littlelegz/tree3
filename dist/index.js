@@ -4872,7 +4872,7 @@ var css_248z = ".dropdown-menu {\r\n  position: absolute;\r\n  top: 100%;\r\n  l
 styleInject(css_248z);
 
 var RectTree = forwardRef(function (_a, ref) {
-    var data = _a.data, _b = _a.width, width = _b === void 0 ? 1000 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler;
+    var data = _a.data, _b = _a.width, width = _b === void 0 ? 1000 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler, homeNode = _a.homeNode;
     var _c = useState(false), variableLinks = _c[0], setVariableLinks = _c[1];
     var _d = useState(true), displayLeaves = _d[0], setDisplayLeaves = _d[1];
     var _e = useState(false), tipAlign = _e[0], setTipAlign = _e[1];
@@ -5235,7 +5235,7 @@ var RectTree = forwardRef(function (_a, ref) {
         svgRef.current = svgMain.node();
         // Finally, zoom to center
         if (svgRef.current && containerRef.current) {
-            findAndZoom$1(varData.data.name, select(svgRef.current), containerRef, variableLinks);
+            findAndZoom$1(homeNode || varData.data.name, select(svgRef.current), containerRef, variableLinks);
         }
     }, [varData, width]);
     useEffect(function () {
@@ -5299,7 +5299,7 @@ var RectTree = forwardRef(function (_a, ref) {
 });
 
 var RadialTree = forwardRef(function (_a, ref) {
-    var data = _a.data, _b = _a.width, width = _b === void 0 ? 1000 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler;
+    var data = _a.data, _b = _a.width, width = _b === void 0 ? 1000 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler, homeNode = _a.homeNode;
     var _c = useState(false), variableLinks = _c[0], setVariableLinks = _c[1];
     var _d = useState(true), displayLeaves = _d[0], setDisplayLeaves = _d[1];
     var _e = useState(true), tipAlign = _e[0], setTipAlign = _e[1];
@@ -5667,7 +5667,7 @@ var RadialTree = forwardRef(function (_a, ref) {
         svgRef.current = svgMain.node();
         // Finally, zoom to center
         if (svgRef.current && containerRef.current) {
-            findAndZoom$2(varData.data.name, select(svgRef.current), containerRef, variableLinks);
+            findAndZoom$2(homeNode || varData.data.name, select(svgRef.current), containerRef, variableLinks);
         }
     }, [varData, width]);
     useEffect(function () {
@@ -5977,7 +5977,7 @@ function findAndZoom(name, svg, container, scale) {
 }
 
 var UnrootedTree = forwardRef(function (_a, ref) {
-    var data = _a.data; _a.width; var _c = _a.scale, scale = _c === void 0 ? 500 : _c, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler;
+    var data = _a.data; _a.width; var _c = _a.scale, scale = _c === void 0 ? 500 : _c, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler, homeNode = _a.homeNode;
     var _d = useState(true), displayLeaves = _d[0], setDisplayLeaves = _d[1];
     var linkExtensionRef = useRef(null);
     var linkRef = useRef(null);
@@ -6365,6 +6365,10 @@ var UnrootedTree = forwardRef(function (_a, ref) {
         // Append SVG to container
         containerRef.current.innerHTML = ''; // Clear existing content
         containerRef.current.appendChild(svgMain.node());
+        // Finally, zoom to center
+        if (svgRef.current && containerRef.current) {
+            findAndZoom(homeNode || varData.data.name, select(svgRef.current), containerRef, scale);
+        }
     }, [data, containerRef, refreshTrigger]);
     useEffect(function () {
         var _a, _b;

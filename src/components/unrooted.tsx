@@ -24,7 +24,7 @@ export interface UnrootedTreeRef {
   setDisplayLeaves: (value: boolean) => void;
   recenterView: () => void;
   refresh: () => void;
-  getData: () => UnrootedData | null;
+  getRoot: () => UnrootedData | null;
   getContainer: () => HTMLDivElement | null;
   findAndZoom: (name: string, container: React.MutableRefObject<HTMLDivElement>) => void;
 }
@@ -561,8 +561,8 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     containerRef.current.appendChild(svgMain.node()!);
 
     // Finally, zoom to center
-    if (svgRef.current && containerRef.current) {
-      findAndZoom(homeNode || varData.data.name, d3.select(svgRef.current), containerRef as React.MutableRefObject<HTMLDivElement>, scale);
+    if (svgRef.current && containerRef.current && homeNode) {
+      findAndZoom(homeNode, d3.select(svgRef.current), containerRef as React.MutableRefObject<HTMLDivElement>, scale);
     }
   }, [data, containerRef, refreshTrigger]);
 
@@ -587,7 +587,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     setDisplayLeaves: (value: boolean) => setDisplayLeaves(value),
     recenterView: () => recenterView(),
     refresh: () => setRefreshTrigger(prev => prev + 1),
-    getData: () => varData,
+    getRoot: () => varData,
     getContainer: () => containerRef.current,
     findAndZoom: (name: string, container: React.MutableRefObject<HTMLDivElement>) => {
       if (svgRef.current && varData) {
