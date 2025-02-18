@@ -34,6 +34,11 @@ export interface RadialTreeProps {
     onClick: (node: RadialNode) => void;
     toShow: (node: RadialNode) => boolean;
   }];
+  customLeafMenuItems?: [{
+    label: (node: RadialNode) => string;
+    onClick: (node: RadialNode) => void;
+    toShow: (node: RadialNode) => boolean;
+  }];
   nodeStyler?: (node: RadialNode) => void;
   linkStyler?: (source: RadialNode, target: RadialNode) => void;
   leafStyler?: (node: RadialNode) => void;
@@ -71,6 +76,11 @@ export interface UnrootedTreeProps {
   onLinkMouseOver?: (event: MouseEvent, source: UnrootedNode, target: UnrootedNode) => void;
   onLinkMouseOut?: (event: MouseEvent, source: UnrootedNode, target: UnrootedNode) => void;
   customNodeMenuItems?: [{
+    label: (node: UnrootedNode) => string;
+    onClick: (node: UnrootedNode) => void;
+    toShow: (node: UnrootedNode) => boolean;
+  }];
+  customLeafMenuItems?: [{
     label: (node: UnrootedNode) => string;
     onClick: (node: UnrootedNode) => void;
     toShow: (node: UnrootedNode) => boolean;

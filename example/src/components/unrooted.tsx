@@ -43,6 +43,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
   onLinkMouseOver,
   onLinkMouseOut,
   customNodeMenuItems,
+  customLeafMenuItems,
   nodeStyler,
   linkStyler,
   leafStyler
@@ -310,6 +311,57 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     }
 
     function leafClicked(event: MouseEvent, d: UnrootedNode): void {
+      d3.selectAll('.tooltip-node').remove();
+
+      const menu = d3.select(containerRef.current)
+        .append('div')
+        .attr('class', 'menu-node')
+        .style('position', 'fixed')
+        .style('left', `${event.clientX + 10}px`)
+        .style('top', `${event.clientY - 10}px`)
+        .style('opacity', 1)
+        .node();
+
+      const MenuContent = (
+        <>
+          <div className="menu-header">{d.data.name}
+
+          </div>
+          <div className="menu-buttons">
+            <div className="dropdown-divider" />
+            {/* Custom menu items */}
+            {customLeafMenuItems?.map(item => {
+              if (item.toShow(d)) {
+                return (
+                  <a className="dropdown-item" onClick={() => { item.onClick(d); menu?.remove(); }}>
+                    {item.label(d)}
+                  </a>
+                );
+              }
+            })}
+          </div>
+        </>
+      );
+
+      if (menu) {
+        const root = createRoot(menu);
+        root.render(MenuContent);
+
+        setTimeout(() => {
+          const handleClickOutside = (e: MouseEvent) => {
+            if (menu && !menu.contains(e.target as Node)) {
+              try {
+                menu.remove();
+              } catch (e) { // When rerooting, tree display is refreshed and menu is removed
+                console.error(e);
+              }
+              window.removeEventListener('click', handleClickOutside);
+            }
+          };
+          window.addEventListener('click', handleClickOutside);
+        }, 5);
+      }
+
       onLeafClick?.(event, d);
     }
 

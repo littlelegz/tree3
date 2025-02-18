@@ -4585,6 +4585,9 @@ function findAndZoom$2(name, svg, container, variable) {
     var node = svg.select('g.nodes')
         .selectAll('g.inner-node')
         .filter(function (d) { return d.data.name === name; });
+    var leaf = svg.select('g.leaves')
+        .selectAll('text.leaf-label')
+        .filter(function (d) { return d.data.name === name; });
     if (!node.empty()) {
         var nodeElement = node.node();
         var nodeData = node.data()[0];
@@ -4624,12 +4627,72 @@ function findAndZoom$2(name, svg, container, variable) {
             .style("fill", currColor)
             .style("r", currRadius);
     }
-    // Find leaf with name in tree
-    var leaf = svg.select('g.leaves')
-        .selectAll('g.leaf')
-        .filter(function (d) { return d.data.name === name; });
-    if (!leaf.empty()) {
-        console.log("Found leaf", leaf);
+    else if (!leaf.empty()) {
+        var leafElement = leaf.node();
+        var leafData = leaf.data()[0];
+        var path = leafData.linkExtensionNode;
+        if (path) {
+            var pathStrValue = path.getAttribute('d') || '';
+            var lastLCoords = pathStrValue.match(/L\s*([0-9.-]+)\s*,?\s*([0-9.-]+)\s*$/);
+            if (lastLCoords) {
+                lastLCoords[0]; var x = lastLCoords[1], y = lastLCoords[2];
+                console.log(x, y);
+                // Center the node
+                var centerOffestX = container.current.clientWidth / 2;
+                var centerOffestY = container.current.clientHeight / 2;
+                var zoom$1 = zoom().on("zoom", function (event) {
+                    svg.select("g").attr("transform", event.transform);
+                });
+                // Apply transform here
+                svg.transition()
+                    .duration(750)
+                    .call(zoom$1.transform, identity
+                    .translate(-x + centerOffestX, -y + centerOffestY)
+                    .scale(1));
+                // Pulse the leaf label text
+                var text = select(leafElement);
+                var currColor = text.style("fill");
+                var currSize = text.style("font-size");
+                var newSize = (parseFloat(currSize) * 2).toString();
+                text.transition()
+                    .delay(750)
+                    .style("fill", "red")
+                    .style("font-size", newSize)
+                    .transition()
+                    .duration(750)
+                    .style("fill", currColor)
+                    .style("font-size", currSize)
+                    .transition()
+                    .duration(750)
+                    .style("fill", "red")
+                    .style("font-size", newSize)
+                    .transition()
+                    .duration(750)
+                    .style("fill", currColor)
+                    .style("font-size", currSize);
+                // Pulse the link extension
+                var linkExtension = select(path);
+                var currStroke = linkExtension.style("stroke");
+                var currStrokeWidth = linkExtension.style("stroke-width");
+                var newStrokeWidth = (parseFloat(currStrokeWidth) * 2).toString();
+                linkExtension.transition()
+                    .delay(750)
+                    .style("stroke", "red")
+                    .style("stroke-width", newStrokeWidth)
+                    .transition()
+                    .duration(750)
+                    .style("stroke", currStroke)
+                    .style("stroke-width", currStrokeWidth)
+                    .transition()
+                    .duration(750)
+                    .style("stroke", "red")
+                    .style("stroke-width", newStrokeWidth)
+                    .transition()
+                    .duration(750)
+                    .style("stroke", currStroke)
+                    .style("stroke-width", currStrokeWidth);
+            }
+        }
     }
 }
 
@@ -4668,6 +4731,9 @@ function findAndZoom$1(name, svg, container, variable) {
     var node = svg.select('g.nodes')
         .selectAll('g.inner-node')
         .filter(function (d) { return d.data.name === name; });
+    var leaf = svg.select('g.leaves')
+        .selectAll('text.leaf-label')
+        .filter(function (d) { return d.data.name === name; });
     if (!node.empty()) {
         var nodeElement = node.node();
         var nodeData = node.data()[0];
@@ -4681,7 +4747,7 @@ function findAndZoom$1(name, svg, container, variable) {
         svg.transition()
             .duration(750)
             .call(zoom$1.transform, identity
-            .translate(-y + centerOffsetX, -x + centerOffsetY) // Hard coding these values is not ideal. TODO: Fix centering
+            .translate(-y + centerOffsetX, -x + centerOffsetY)
             .scale(1));
         var circle = select(nodeElement).select('circle');
         var currRadius = circle.attr("r");
@@ -4704,11 +4770,71 @@ function findAndZoom$1(name, svg, container, variable) {
             .style("fill", currColor)
             .style("r", currRadius);
     }
-    var leaf = svg.select('g.leaves')
-        .selectAll('g.leaf')
-        .filter(function (d) { return d.data.name === name; });
-    if (!leaf.empty()) {
-        console.log("Found leaf", leaf);
+    else if (!leaf.empty()) {
+        var leafElement = leaf.node();
+        var leafData = leaf.data()[0];
+        var path = leafData.linkExtensionNode;
+        if (path) {
+            var pathStrValue = path.getAttribute('d') || '';
+            var lastLCoords = pathStrValue.match(/V\s*([0-9.-]+)H\s*([0-9.-]+)/);
+            if (lastLCoords) {
+                lastLCoords[0]; var x = lastLCoords[1], y = lastLCoords[2];
+                // Center the node
+                var centerOffestX = container.current.clientWidth / 2;
+                var centerOffestY = container.current.clientHeight / 2;
+                var zoom$1 = zoom().on("zoom", function (event) {
+                    svg.select("g").attr("transform", event.transform);
+                });
+                // Apply transform here
+                svg.transition()
+                    .duration(750)
+                    .call(zoom$1.transform, identity
+                    .translate(-y + centerOffestX, -x + centerOffestY)
+                    .scale(1));
+                // Pulse the leaf label text
+                var text = select(leafElement);
+                var currColor = text.style("fill");
+                var currSize = text.style("font-size");
+                var newSize = (parseFloat(currSize) * 2).toString();
+                text.transition()
+                    .delay(750)
+                    .style("fill", "red")
+                    .style("font-size", newSize)
+                    .transition()
+                    .duration(750)
+                    .style("fill", currColor)
+                    .style("font-size", currSize)
+                    .transition()
+                    .duration(750)
+                    .style("fill", "red")
+                    .style("font-size", newSize)
+                    .transition()
+                    .duration(750)
+                    .style("fill", currColor)
+                    .style("font-size", currSize);
+                // Pulse the link extension
+                var linkExtension = select(path);
+                var currStroke = linkExtension.style("stroke");
+                var currStrokeWidth = linkExtension.style("stroke-width");
+                var newStrokeWidth = (parseFloat(currStrokeWidth) * 2).toString();
+                linkExtension.transition()
+                    .delay(750)
+                    .style("stroke", "red")
+                    .style("stroke-width", newStrokeWidth)
+                    .transition()
+                    .duration(750)
+                    .style("stroke", currStroke)
+                    .style("stroke-width", currStrokeWidth)
+                    .transition()
+                    .duration(750)
+                    .style("stroke", "red")
+                    .style("stroke-width", newStrokeWidth)
+                    .transition()
+                    .duration(750)
+                    .style("stroke", currStroke)
+                    .style("stroke-width", currStrokeWidth);
+            }
+        }
     }
 }
 
@@ -4920,10 +5046,11 @@ var RectTree = forwardRef(function (_a, ref) {
         // Draw leaf labels
         var leafLabels = svg.append("g")
             .attr("class", "leaves")
-            .selectAll("text")
+            .selectAll(".leaf-label")
             .data(varData.leaves())
             .join("text")
             .each(function (d) { d.labelElement = this; })
+            .attr("class", "leaf-label")
             .attr("dy", ".31em")
             .attr("transform", function (d) { var _a; return "translate(".concat(((_a = d.y) !== null && _a !== void 0 ? _a : 0) + 4, ",").concat(d.x, ")"); })
             .text(function (d) { return d.data.name.replace(/_/g, " "); })
@@ -5315,6 +5442,7 @@ var RadialTree = forwardRef(function (_a, ref) {
             .data(varData.leaves())
             .join("text")
             .each(function (d) { d.labelElement = this; })
+            .attr("class", "leaf-label")
             .attr("dy", ".31em")
             .attr("transform", function (d) { var _a, _b; return "rotate(".concat(((_a = d.x) !== null && _a !== void 0 ? _a : 0) - 90, ") translate(").concat(innerRadius + 4, ",0)").concat(((_b = d.x) !== null && _b !== void 0 ? _b : 0) < 180 ? "" : " rotate(180)"); })
             .attr("text-anchor", function (d) { var _a; return ((_a = d.x) !== null && _a !== void 0 ? _a : 0) < 180 ? "start" : "end"; })
@@ -5651,13 +5779,17 @@ function toggleHighlightTerminalLinks(node) {
     }
 }
 // TODO, this centering function doesn't work as expected
-function findAndZoom(name, svg, container, scale, bbox) {
+function findAndZoom(name, svg, container, scale) {
     var _a, _b;
     // Find node with name in tree
     var node = svg.select('g.nodes')
         .selectAll('g.inner-node')
         .filter(function (d) { return d.data.name === name; });
-    if (!node.empty()) {
+    // Find leaf with name in tree
+    var leaf = svg.select('g.leaves')
+        .selectAll('text.leaf-label')
+        .filter(function (d) { return d.data.name === name; });
+    if (!node.empty()) { // Found node
         var nodeElement = node.node();
         var nodeData = node.data()[0];
         if (!nodeElement) {
@@ -5665,7 +5797,6 @@ function findAndZoom(name, svg, container, scale, bbox) {
         }
         var x = ((_a = nodeData.x) !== null && _a !== void 0 ? _a : 0) * scale;
         var y = ((_b = nodeData.y) !== null && _b !== void 0 ? _b : 0) * scale;
-        console.log("Node position: ", x, y);
         // Center the node
         var centerOffestX = container.current.clientWidth / 2;
         var centerOffestY = container.current.clientHeight / 2;
@@ -5698,12 +5829,74 @@ function findAndZoom(name, svg, container, scale, bbox) {
             .style("fill", currColor)
             .style("r", currRadius);
     }
-    // Find leaf with name in tree
-    var leaf = svg.select('g.leaves')
-        .selectAll('g.leaf')
-        .filter(function (d) { return d.data.name === name; });
-    if (!leaf.empty()) {
-        console.log("Found leaf", leaf);
+    else if (!leaf.empty()) { // Found leaf
+        var leafElement = leaf.node();
+        var leafData = leaf.data()[0];
+        if (!leafElement) {
+            return;
+        }
+        var path = leafData.linkExtensionNode;
+        if (path) {
+            var pathStrValue = path.getAttribute('d') || '';
+            var lastLCoords = pathStrValue.match(/L\s*([0-9.-]+)\s*,?\s*([0-9.-]+)\s*$/);
+            if (lastLCoords) {
+                lastLCoords[0]; var x = lastLCoords[1], y = lastLCoords[2];
+                // Center the node
+                var centerOffestX = container.current.clientWidth / 2;
+                var centerOffestY = container.current.clientHeight / 2;
+                var zoom$1 = zoom().on("zoom", function (event) {
+                    svg.select("g").attr("transform", event.transform);
+                });
+                // Apply transform here
+                svg.transition()
+                    .duration(750)
+                    .call(zoom$1.transform, identity
+                    .translate(-x + centerOffestX, -y + centerOffestY)
+                    .scale(1));
+                // Pulse the leaf label and link extension
+                var text = select(leafElement);
+                var currColor = text.style("fill");
+                var currFontSize = text.style("font-size");
+                var newFontSize = (parseFloat(currFontSize) * 2).toString();
+                text.transition()
+                    .delay(750)
+                    .style("fill", "red")
+                    .style("font-size", newFontSize)
+                    .transition()
+                    .duration(750)
+                    .style("fill", currColor)
+                    .style("font-size", currFontSize)
+                    .transition()
+                    .duration(750)
+                    .style("fill", "red")
+                    .style("font-size", newFontSize)
+                    .transition()
+                    .duration(750)
+                    .style("fill", currColor)
+                    .style("font-size", currFontSize);
+                // Pulse the link extension
+                var linkExtension = select(path);
+                var currStroke = linkExtension.style("stroke");
+                var currStrokeWidth = linkExtension.style("stroke-width");
+                var newStrokeWidth = (parseFloat(currStrokeWidth) * 2).toString();
+                linkExtension.transition()
+                    .delay(750)
+                    .style("stroke", "red")
+                    .style("stroke-width", newStrokeWidth)
+                    .transition()
+                    .duration(750)
+                    .style("stroke", currStroke)
+                    .style("stroke-width", currStrokeWidth)
+                    .transition()
+                    .duration(750)
+                    .style("stroke", "red")
+                    .style("stroke-width", newStrokeWidth)
+                    .transition()
+                    .duration(750)
+                    .style("stroke", currStroke)
+                    .style("stroke-width", currStrokeWidth);
+            }
+        }
     }
 }
 
@@ -6070,7 +6263,7 @@ var UnrootedTree = forwardRef(function (_a, ref) {
         var svg = select(containerRef.current).select('svg').select('g');
         svg.transition()
             .duration(750)
-            .attr('transform', "translate(0,0)");
+            .attr('transform', "translate(0,0)"); // TODO recenter to initalTransform, not (0,0)
     };
     useImperativeHandle(ref, function () { return ({
         getLinkExtensions: function () { return linkExtensionRef.current; },
@@ -6084,7 +6277,7 @@ var UnrootedTree = forwardRef(function (_a, ref) {
         getContainer: function () { return containerRef.current; },
         findAndZoom: function (name, container) {
             if (svgRef.current && varData) {
-                findAndZoom(name, select(svgRef.current), container, scale, getBoundingBox(varData));
+                findAndZoom(name, select(svgRef.current), container, scale);
             }
         },
     }); });
