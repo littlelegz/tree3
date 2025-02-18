@@ -46,7 +46,8 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
   customLeafMenuItems,
   nodeStyler,
   linkStyler,
-  leafStyler
+  leafStyler,
+  homeNode
 }, ref) => {
   const [displayLeaves, setDisplayLeaves] = useState(true);
   const linkExtensionRef = useRef<d3.Selection<SVGPathElement, Link<UnrootedNode>, SVGGElement, unknown>>(null);

@@ -4872,7 +4872,7 @@ var css_248z = ".dropdown-menu {\r\n  position: absolute;\r\n  top: 100%;\r\n  l
 styleInject(css_248z);
 
 var RectTree = forwardRef(function (_a, ref) {
-    var data = _a.data, _b = _a.width, width = _b === void 0 ? 1000 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler;
+    var data = _a.data, _b = _a.width, width = _b === void 0 ? 1000 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler;
     var _c = useState(false), variableLinks = _c[0], setVariableLinks = _c[1];
     var _d = useState(true), displayLeaves = _d[0], setDisplayLeaves = _d[1];
     var _e = useState(false), tipAlign = _e[0], setTipAlign = _e[1];
@@ -5041,6 +5041,44 @@ var RectTree = forwardRef(function (_a, ref) {
             };
         }
         function leafClicked(event, d) {
+            selectAll('.tooltip-node').remove();
+            var menu = select(containerRef.current)
+                .append('div')
+                .attr('class', 'menu-node')
+                .style('position', 'fixed')
+                .style('left', "".concat(event.clientX + 10, "px"))
+                .style('top', "".concat(event.clientY - 10, "px"))
+                .style('opacity', 1)
+                .node();
+            var MenuContent = (React.createElement(React.Fragment, null,
+                React.createElement("div", { className: "menu-header" }, d.data.name),
+                React.createElement("div", { className: "menu-buttons" },
+                    React.createElement("div", { className: "dropdown-header" }, "Toggle Selections"),
+                    React.createElement("a", { className: "dropdown-item", onClick: function () { return toggleHighlightLinkToRoot(d); } }, "Path to Root"),
+                    React.createElement("div", { className: "dropdown-divider" }), customLeafMenuItems === null || customLeafMenuItems === void 0 ? void 0 :
+                    customLeafMenuItems.map(function (item) {
+                        if (item.toShow(d)) {
+                            return (React.createElement("a", { className: "dropdown-item", onClick: function () { item.onClick(d); menu === null || menu === void 0 ? void 0 : menu.remove(); } }, item.label(d)));
+                        }
+                    }))));
+            if (menu) {
+                var root = createRoot(menu);
+                root.render(MenuContent);
+                setTimeout(function () {
+                    var handleClickOutside = function (e) {
+                        if (menu && !menu.contains(e.target)) {
+                            try {
+                                menu.remove();
+                            }
+                            catch (e) { // When rerooting, tree display is refreshed and menu is removed
+                                console.error(e);
+                            }
+                            window.removeEventListener('click', handleClickOutside);
+                        }
+                    };
+                    window.addEventListener('click', handleClickOutside);
+                }, 5);
+            }
             onLeafClick === null || onLeafClick === void 0 ? void 0 : onLeafClick(event, d);
         }
         // Draw leaf labels
@@ -5261,7 +5299,7 @@ var RectTree = forwardRef(function (_a, ref) {
 });
 
 var RadialTree = forwardRef(function (_a, ref) {
-    var data = _a.data, _b = _a.width, width = _b === void 0 ? 1000 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler;
+    var data = _a.data, _b = _a.width, width = _b === void 0 ? 1000 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler;
     var _c = useState(false), variableLinks = _c[0], setVariableLinks = _c[1];
     var _d = useState(true), displayLeaves = _d[0], setDisplayLeaves = _d[1];
     var _e = useState(true), tipAlign = _e[0], setTipAlign = _e[1];
@@ -5433,6 +5471,44 @@ var RadialTree = forwardRef(function (_a, ref) {
             };
         }
         function leafClicked(event, d) {
+            selectAll('.tooltip-node').remove();
+            var menu = select(containerRef.current)
+                .append('div')
+                .attr('class', 'menu-node')
+                .style('position', 'fixed')
+                .style('left', "".concat(event.clientX + 10, "px"))
+                .style('top', "".concat(event.clientY - 10, "px"))
+                .style('opacity', 1)
+                .node();
+            var MenuContent = (React.createElement(React.Fragment, null,
+                React.createElement("div", { className: "menu-header" }, d.data.name),
+                React.createElement("div", { className: "menu-buttons" },
+                    React.createElement("div", { className: "dropdown-header" }, "Toggle Selections"),
+                    React.createElement("a", { className: "dropdown-item", onClick: function () { return toggleHighlightLinkToRoot(d); } }, "Path to Root"),
+                    React.createElement("div", { className: "dropdown-divider" }), customLeafMenuItems === null || customLeafMenuItems === void 0 ? void 0 :
+                    customLeafMenuItems.map(function (item) {
+                        if (item.toShow(d)) {
+                            return (React.createElement("a", { className: "dropdown-item", onClick: function () { item.onClick(d); menu === null || menu === void 0 ? void 0 : menu.remove(); } }, item.label(d)));
+                        }
+                    }))));
+            if (menu) {
+                var root = createRoot(menu);
+                root.render(MenuContent);
+                setTimeout(function () {
+                    var handleClickOutside = function (e) {
+                        if (menu && !menu.contains(e.target)) {
+                            try {
+                                menu.remove();
+                            }
+                            catch (e) { // When rerooting, tree display is refreshed and menu is removed
+                                console.error(e);
+                            }
+                            window.removeEventListener('click', handleClickOutside);
+                        }
+                    };
+                    window.addEventListener('click', handleClickOutside);
+                }, 5);
+            }
             onLeafClick === null || onLeafClick === void 0 ? void 0 : onLeafClick(event, d);
         }
         // Draw leaf labels
@@ -5901,7 +5977,7 @@ function findAndZoom(name, svg, container, scale) {
 }
 
 var UnrootedTree = forwardRef(function (_a, ref) {
-    var data = _a.data; _a.width; var _c = _a.scale, scale = _c === void 0 ? 500 : _c, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler;
+    var data = _a.data; _a.width; var _c = _a.scale, scale = _c === void 0 ? 500 : _c, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler;
     var _d = useState(true), displayLeaves = _d[0], setDisplayLeaves = _d[1];
     var linkExtensionRef = useRef(null);
     var linkRef = useRef(null);
@@ -6088,6 +6164,42 @@ var UnrootedTree = forwardRef(function (_a, ref) {
             };
         }
         function leafClicked(event, d) {
+            selectAll('.tooltip-node').remove();
+            var menu = select(containerRef.current)
+                .append('div')
+                .attr('class', 'menu-node')
+                .style('position', 'fixed')
+                .style('left', "".concat(event.clientX + 10, "px"))
+                .style('top', "".concat(event.clientY - 10, "px"))
+                .style('opacity', 1)
+                .node();
+            var MenuContent = (React.createElement(React.Fragment, null,
+                React.createElement("div", { className: "menu-header" }, d.data.name),
+                React.createElement("div", { className: "menu-buttons" },
+                    React.createElement("div", { className: "dropdown-divider" }), customLeafMenuItems === null || customLeafMenuItems === void 0 ? void 0 :
+                    customLeafMenuItems.map(function (item) {
+                        if (item.toShow(d)) {
+                            return (React.createElement("a", { className: "dropdown-item", onClick: function () { item.onClick(d); menu === null || menu === void 0 ? void 0 : menu.remove(); } }, item.label(d)));
+                        }
+                    }))));
+            if (menu) {
+                var root = createRoot(menu);
+                root.render(MenuContent);
+                setTimeout(function () {
+                    var handleClickOutside = function (e) {
+                        if (menu && !menu.contains(e.target)) {
+                            try {
+                                menu.remove();
+                            }
+                            catch (e) { // When rerooting, tree display is refreshed and menu is removed
+                                console.error(e);
+                            }
+                            window.removeEventListener('click', handleClickOutside);
+                        }
+                    };
+                    window.addEventListener('click', handleClickOutside);
+                }, 5);
+            }
             onLeafClick === null || onLeafClick === void 0 ? void 0 : onLeafClick(event, d);
         }
         // Draw leaf labels

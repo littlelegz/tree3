@@ -30,7 +30,7 @@ export interface RectTreeRef {
   refresh: () => void;
   getRoot: () => RadialNode | null;
   getContainer: () => HTMLDivElement | null;
-  findAndZoom: (name: string, container: React.MutableRefObject<HTMLDivElement>, variable: boolean) => void
+  findAndZoom: (name: string, container: React.MutableRefObject<HTMLDivElement>, variable: boolean) => void;
 }
 
 const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
@@ -49,7 +49,8 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
   customLeafMenuItems,
   nodeStyler,
   linkStyler,
-  leafStyler
+  leafStyler,
+  homeNode,
 }, ref) => {
   const [variableLinks, setVariableLinks] = useState(false);
   const [displayLeaves, setDisplayLeaves] = useState(true);

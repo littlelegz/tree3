@@ -47,7 +47,8 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
   customLeafMenuItems,
   nodeStyler,
   linkStyler,
-  leafStyler
+  leafStyler,
+  homeNode
 }, ref) => {
   const [variableLinks, setVariableLinks] = useState(false);
   const [displayLeaves, setDisplayLeaves] = useState(true);
