@@ -170,15 +170,20 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
 
     // Initialize base SVG group
     const svg = svgMain.append("g").attr("class", "tree")
-      .attr("transform", `translate(${translateX}, ${translateY})`);
+    //.attr("transform", `translate(${translateX}, ${translateY})`);
 
-    // Apply initial transform
-    svgMain.call(d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.5, 8]) // Min/max zoom level
+    // Create zoom behavior
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.5, 8])
       .on('zoom', (event) => {
         svg.attr('transform', event.transform);
-      })
-      .transform, initialTransform);
+      });
+
+    // Apply zoom behavior
+    svgMain.call(zoom);
+    // Set initial transform
+    svgMain.call(zoom.transform, initialTransform);
+
 
     // Append styles
     svg.append("style").text(`

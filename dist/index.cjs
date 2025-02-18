@@ -4595,7 +4595,7 @@ function findAndZoom$2(name, svg, container, variable) {
         // Convert polar to cartesian coordinates
         var cartX = distance * Math.cos(x);
         var cartY = distance * Math.sin(x);
-        container.current.clientWidth / 2;
+        var centerOffsetX = container.current.clientWidth / 2;
         var centerOffsetY = container.current.clientHeight / 2; // This offset is based on #tree-div h/w. This is improper. TODO: Fix centering
         var zoom$1 = zoom().on("zoom", function (event) {
             svg.select("g").attr("transform", event.transform);
@@ -4603,7 +4603,7 @@ function findAndZoom$2(name, svg, container, variable) {
         svg.transition()
             .duration(750)
             .call(zoom$1.transform, identity
-            .translate(-cartY, cartX - centerOffsetY)
+            .translate(-cartY + centerOffsetX, cartX + centerOffsetY)
             .scale(1));
         var circle = select(nodeElement).select('circle');
         var currRadius = circle.attr("r");
@@ -4665,8 +4665,8 @@ function highlightDescendantsRect(node, active, linksVariable, svg, innerRadius)
             .style('stroke', 'rgba(255, 255, 0, 0.8)');
     }
 }
-function findAndZoom$1(name, svg, container) {
-    var _a, _b;
+function findAndZoom$1(name, svg, container, variable) {
+    var _a, _b, _c;
     var node = svg.select('g.nodes')
         .selectAll('g.inner-node')
         .filter(function (d) { return d.data.name === name; });
@@ -4674,7 +4674,7 @@ function findAndZoom$1(name, svg, container) {
         var nodeElement = node.node();
         var nodeData = node.data()[0];
         var x = (_a = nodeData.x) !== null && _a !== void 0 ? _a : 0;
-        var y = (_b = nodeData.y) !== null && _b !== void 0 ? _b : 0;
+        var y = variable ? ((_b = nodeData.radius) !== null && _b !== void 0 ? _b : 0) : ((_c = nodeData.y) !== null && _c !== void 0 ? _c : 0);
         var centerOffsetX = container.current.clientWidth / 2;
         var centerOffsetY = container.current.clientHeight / 2;
         var zoom$1 = zoom().on("zoom", function (event) {
@@ -4683,7 +4683,7 @@ function findAndZoom$1(name, svg, container) {
         svg.transition()
             .duration(750)
             .call(zoom$1.transform, identity
-            .translate(-y + centerOffsetX, -x + centerOffsetY)
+            .translate(-y + centerOffsetX, -x + centerOffsetY) // Hard coding these values is not ideal. TODO: Fix centering
             .scale(1));
         var circle = select(nodeElement).select('circle');
         var currRadius = circle.attr("r");
@@ -4749,7 +4749,7 @@ styleInject(css_248z);
 
 var RectTree = React.forwardRef(function (_a, ref) {
     var data = _a.data, _b = _a.width, width = _b === void 0 ? 1000 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler;
-    var _c = React.useState(true), variableLinks = _c[0], setVariableLinks = _c[1];
+    var _c = React.useState(false), variableLinks = _c[0], setVariableLinks = _c[1];
     var _d = React.useState(true), displayLeaves = _d[0], setDisplayLeaves = _d[1];
     var _e = React.useState(false), tipAlign = _e[0], setTipAlign = _e[1];
     var linkExtensionRef = React.useRef(null);
@@ -4824,7 +4824,9 @@ var RectTree = React.forwardRef(function (_a, ref) {
         // Setup SVG
         var svgMain = select(containerRef.current)
             .append("svg")
-            .attr("viewBox", [0, 0, width, width])
+            //.attr("viewBox", [0, 0, width, width])
+            .attr("width", "100%") // Set width to 100%
+            .attr("height", "100%") // Set height to 100%
             .attr("font-family", "sans-serif")
             .attr("font-size", 10)
             .call(zoom$1);
@@ -4875,7 +4877,7 @@ var RectTree = React.forwardRef(function (_a, ref) {
             .data(varData.links().filter(function (d) { return !d.target.children; })) // targets nodes without children
             .join("path")
             .each(function (d) { d.target.linkExtensionNode = this; })
-            .attr("d", linkExtensionVariable);
+            .attr("d", linkExtensionConstant);
         var links = svg.append("g")
             .attr("class", "links")
             .attr("fill", "none")
@@ -4884,7 +4886,7 @@ var RectTree = React.forwardRef(function (_a, ref) {
             .data(varData.links())
             .join("path")
             .each(function (d) { d.target.linkNode = this; })
-            .attr("d", linkVariable)
+            .attr("d", linkConstant)
             .attr("stroke", function (d) { return d.target.color || "#000"; })
             .style("cursor", "pointer")
             .on("mouseover", linkhovered(true))
@@ -5047,7 +5049,7 @@ var RectTree = React.forwardRef(function (_a, ref) {
             .join("g")
             .each(function (d) { d.nodeElement = this; })
             .attr("class", "inner-node")
-            .attr("transform", function (d) { return "translate(".concat(d.radius, ",").concat(d.x, ")"); });
+            .attr("transform", function (d) { return "translate(".concat(d.y, ",").concat(d.x, ")"); });
         // Add circles for nodes
         nodes.append("circle")
             .attr("r", 3)
@@ -5068,6 +5070,10 @@ var RectTree = React.forwardRef(function (_a, ref) {
         nodesRef.current = nodes;
         leafLabelsRef.current = leafLabels;
         svgRef.current = svgMain.node();
+        // Finally, zoom to center
+        if (svgRef.current && containerRef.current) {
+            findAndZoom$1(varData.data.name, select(svgRef.current), containerRef, variableLinks);
+        }
     }, [varData, width]);
     React.useEffect(function () {
         var _a, _b, _c, _d, _e, _f;
@@ -5117,11 +5123,11 @@ var RectTree = React.forwardRef(function (_a, ref) {
         getContainer: function () { return containerRef.current; },
         findAndZoom: function (name, container) {
             if (svgRef.current) {
-                findAndZoom$1(name, select(svgRef.current), container);
+                findAndZoom$1(name, select(svgRef.current), container, variableLinks);
             }
         }
     }); });
-    return (React.createElement("div", { className: "radial-tree" },
+    return (React.createElement("div", { className: "radial-tree", style: { width: "100%", height: "100%" } },
         React.createElement("div", { ref: containerRef, style: {
                 width: "100%",
                 height: "100%",
@@ -5212,7 +5218,9 @@ var RadialTree = React.forwardRef(function (_a, ref) {
         select(containerRef.current).selectAll("*").remove();
         // Make SVG element
         var svgMain = select(containerRef.current).append("svg")
-            .attr("viewBox", [-outerRadius, -outerRadius, width, width])
+            //.attr("viewBox", [-outerRadius, -outerRadius, width, width])
+            .attr("width", "100%") // Set width to 100%
+            .attr("height", "100%") // Set height to 100%
             .attr("font-family", "sans-serif")
             .attr("font-size", 5)
             .call(zoom$1);
@@ -5455,6 +5463,10 @@ var RadialTree = React.forwardRef(function (_a, ref) {
         nodesRef.current = nodes;
         leafLabelsRef.current = leafLabels;
         svgRef.current = svgMain.node();
+        // Finally, zoom to center
+        if (svgRef.current && containerRef.current) {
+            findAndZoom$2(varData.data.name, select(svgRef.current), containerRef, variableLinks);
+        }
     }, [varData, width]);
     React.useEffect(function () {
         var _a, _b, _c, _d, _e;
@@ -5510,7 +5522,7 @@ var RadialTree = React.forwardRef(function (_a, ref) {
             }
         },
     }); });
-    return (React.createElement("div", { className: "radial-tree" },
+    return (React.createElement("div", { className: "radial-tree", style: { width: "100%", height: "100%" } },
         React.createElement("div", { ref: containerRef, style: {
                 width: "100%",
                 height: "100%",
@@ -5642,34 +5654,30 @@ function toggleHighlightTerminalLinks(node) {
 }
 // TODO, this centering function doesn't work as expected
 function findAndZoom(name, svg, container, scale, bbox) {
+    var _a, _b;
     // Find node with name in tree
     var node = svg.select('g.nodes')
         .selectAll('g.inner-node')
         .filter(function (d) { return d.data.name === name; });
     if (!node.empty()) {
         var nodeElement = node.node();
-        var svgElement = svg.node();
-        if (!nodeElement || !svgElement) {
+        var nodeData = node.data()[0];
+        if (!nodeElement) {
             return;
         }
-        // Get bounding boxes relative to viewport
-        var nodeBounds = nodeElement.getBoundingClientRect();
-        var svgBounds = svgElement.getBoundingClientRect();
-        console.log(svgBounds);
-        // Calculate position relative to SVG
-        var relativeX = nodeBounds.x - svgBounds.x;
-        var relativeY = nodeBounds.y - svgBounds.y;
-        console.log("Node position relative to SVG:", relativeX, relativeY);
+        var x = ((_a = nodeData.x) !== null && _a !== void 0 ? _a : 0) * scale;
+        var y = ((_b = nodeData.y) !== null && _b !== void 0 ? _b : 0) * scale;
+        console.log("Node position: ", x, y);
         // Center the node
-        var centerX = container.current.clientWidth / 2 - relativeX;
-        var centerY = container.current.clientHeight / 2 - relativeY;
+        var centerOffestX = container.current.clientWidth / 2;
+        var centerOffestY = container.current.clientHeight / 2;
         var zoom$1 = zoom().on("zoom", function (event) {
             svg.select("g").attr("transform", event.transform);
         });
         svg.transition()
             .duration(750)
             .call(zoom$1.transform, identity
-            .translate(centerX, centerY)
+            .translate(-x + centerOffestX, -y + centerOffestY)
             .scale(1));
         var circle = select(nodeElement).select('circle');
         var currRadius = circle.attr("r");
@@ -5790,23 +5798,33 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
         tree.data = eq;
         tree.edges = edges(eq);
         setVarData(tree);
-        // Zoom behavior
-        var zoom$1 = zoom()
-            .scaleExtent([0.5, 8]) // Min/max zoom level
-            .on('zoom', function (event) {
-            svgMain.select("g").attr('transform', event.transform);
-        });
         // Clear existing content
         select(containerRef.current).selectAll("*").remove();
         // Initialize SVG Main container, used for zoom/pan listening
         var bbox = getBoundingBox(tree);
+        var initialScale = 0.5;
+        var translateX = (containerRef.current.clientWidth - bbox.width * initialScale) / 2 - bbox.x * initialScale;
+        var translateY = (containerRef.current.clientHeight - bbox.height * initialScale) / 2 - bbox.y * initialScale;
+        var initialTransform = identity.translate(translateX, translateY).scale(initialScale);
         var svgMain = select(containerRef.current).append("svg")
-            .attr("viewBox", "".concat(bbox.x, " ").concat(bbox.y, " ").concat(bbox.width, " ").concat(bbox.height))
+            //.attr("viewBox", `0 0 ${bbox.width} ${bbox.height}`)
+            .attr("width", "100%")
+            .attr("height", "100%")
             .attr("font-family", "sans-serif")
-            .attr("font-size", 5)
-            .call(zoom$1);
+            .attr("font-size", 5);
         // Initialize base SVG group
         var svg = svgMain.append("g").attr("class", "tree");
+        //.attr("transform", `translate(${translateX}, ${translateY})`);
+        // Create zoom behavior
+        var zoom$1 = zoom()
+            .scaleExtent([0.5, 8])
+            .on('zoom', function (event) {
+            svg.attr('transform', event.transform);
+        });
+        // Apply zoom behavior
+        svgMain.call(zoom$1);
+        // Set initial transform
+        svgMain.call(zoom$1.transform, initialTransform);
         // Append styles
         svg.append("style").text("\n      .link--active {\n        stroke: #000 !important;\n        stroke-width: 2px;\n      }\n\n      .link--important {\n        stroke: #00F !important;\n        stroke-width: 1.5px;\n      }\n\n      .link-extension--active {\n        stroke-opacity: .6;\n      }\n\n      .label--active {\n        font-weight: bold;\n      }\n\n      .node--active {\n        stroke: #003366 !important;\n        fill: #0066cc !important;\n      }\n\n      .link--highlight {\n        stroke: #FF0000 !important;\n        stroke-width: 1.5px;\n      }\n\n      .link--hidden {\n        display: none;\n      }\n\n      .node--collapsed {\n        r: 4px !important; \n        fill: #0066cc !important;\n      }\n\n      .tooltip-node {\n        position: absolute;\n        background: white;\n        padding: 5px;\n        border: 1px solid #ccc;\n        border-radius: 4px;\n        font-size: 12px;\n        z-index: 10;\n      }\n    ");
         // Link functions
@@ -6072,7 +6090,7 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
             }
         },
     }); });
-    return (React.createElement("div", { className: "radial-tree" },
+    return (React.createElement("div", { className: "radial-tree", style: { width: "100%", height: "100%" } },
         React.createElement("div", { ref: containerRef, style: {
                 width: "100%",
                 height: "100%",

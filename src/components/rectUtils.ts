@@ -1,4 +1,4 @@
-import { RadialNode, D3Node } from './types';
+import { RadialNode } from './types';
 import * as d3 from 'd3';
 
 function getBoundingBox(node: RadialNode, isVariable: boolean): { minX: number; maxX: number; minY: number } {
