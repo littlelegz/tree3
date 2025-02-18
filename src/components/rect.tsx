@@ -535,7 +535,7 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
 
     // Finally, zoom to center
     if (svgRef.current && containerRef.current) {
-      findAndZoom(varData.data.name, d3.select(svgRef.current), containerRef as React.MutableRefObject<HTMLDivElement>, variableLinks);
+      findAndZoom(homeNode || varData.data.name, d3.select(svgRef.current), containerRef as React.MutableRefObject<HTMLDivElement>, variableLinks);
     }
   }, [varData, width]);
 

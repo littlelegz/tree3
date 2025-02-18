@@ -42,7 +42,7 @@ export interface RadialTreeProps {
   nodeStyler?: (node: RadialNode) => void;
   linkStyler?: (source: RadialNode, target: RadialNode) => void;
   leafStyler?: (node: RadialNode) => void;
-  homeNode: string;
+  homeNode?: string;
 }
 
 // Extend D3's HierarchyNode with radius property

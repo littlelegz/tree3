@@ -560,6 +560,10 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     containerRef.current.innerHTML = ''; // Clear existing content
     containerRef.current.appendChild(svgMain.node()!);
 
+    // Finally, zoom to center
+    if (svgRef.current && containerRef.current) {
+      findAndZoom(homeNode || varData.data.name, d3.select(svgRef.current), containerRef as React.MutableRefObject<HTMLDivElement>, scale);
+    }
   }, [data, containerRef, refreshTrigger]);
 
   useEffect(() => { // Toggle leaf label visibility
