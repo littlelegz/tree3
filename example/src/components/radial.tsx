@@ -304,6 +304,7 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       .data(varData.leaves())
       .join("text")
       .each(function (d: RadialNode) { d.labelElement = this as SVGTextElement; })
+      .attr("class", "leaf-label")
       .attr("dy", ".31em")
       .attr("transform", d => `rotate(${(d.x ?? 0) - 90}) translate(${innerRadius + 4},0)${(d.x ?? 0) < 180 ? "" : " rotate(180)"}`)
       .attr("text-anchor", d => (d.x ?? 0) < 180 ? "start" : "end")

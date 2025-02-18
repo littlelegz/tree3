@@ -147,15 +147,19 @@ export function toggleHighlightTerminalLinks(node: UnrootedNode): void {
 export function findAndZoom(name: string,
   svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
   container: React.MutableRefObject<HTMLDivElement>,
-  scale: number,
-  bbox: { x: number, y: number, width: number, height: number }
+  scale: number
 ): void {
   // Find node with name in tree
   const node = svg.select('g.nodes')
     .selectAll<SVGGElement, UnrootedNode>('g.inner-node')
     .filter(d => d.data.name === name);
 
-  if (!node.empty()) {
+  // Find leaf with name in tree
+  const leaf = svg.select('g.leaves')
+    .selectAll<SVGTextElement, UnrootedNode>('text.leaf-label')
+    .filter(d => d.data.name === name);
+
+  if (!node.empty()) { // Found node
     const nodeElement = node.node();
     const nodeData = node.data()[0];
 
@@ -165,8 +169,6 @@ export function findAndZoom(name: string,
 
     const x = (nodeData.x ?? 0) * scale;
     const y = (nodeData.y ?? 0) * scale;
-
-    console.log("Node position: ", x, y);
 
     // Center the node
     const centerOffestX = container.current.clientWidth / 2;
@@ -205,14 +207,89 @@ export function findAndZoom(name: string,
       .style("fill", currColor)
       .style("r", currRadius);
 
-  }
+  } else if (!leaf.empty()) { // Found leaf
+    const leafElement = leaf.node();
+    const leafData = leaf.data()[0];
 
-  // Find leaf with name in tree
-  const leaf = svg.select('g.leaves')
-    .selectAll<SVGGElement, UnrootedNode>('g.leaf')
-    .filter(d => d.data.name === name);
+    if (!leafElement) {
+      return;
+    }
 
-  if (!leaf.empty()) {
-    console.log("Found leaf", leaf);
+    const path = leafData.linkExtensionNode;
+    if (path) {
+      const pathStrValue = path.getAttribute('d') || '';
+      const lastLCoords = pathStrValue.match(/L\s*([0-9.-]+)\s*,?\s*([0-9.-]+)\s*$/);
+      if (lastLCoords) {
+        const [_, x, y] = lastLCoords;
+
+        // Center the node
+        const centerOffestX = container.current.clientWidth / 2;
+        const centerOffestY = container.current.clientHeight / 2;
+
+        const zoom = d3.zoom().on("zoom", (event) => {
+          svg.select("g").attr("transform", event.transform);
+        });
+
+        // Apply transform here
+        svg.transition()
+          .duration(750)
+          .call(zoom.transform as any, d3.zoomIdentity
+            .translate(-x + centerOffestX, -y + centerOffestY)
+            .scale(1));
+
+        // Pulse the leaf label and link extension
+        const text = d3.select(leafElement);
+        const currColor = text.style("fill");
+        const currFontSize = text.style("font-size");
+        const newFontSize = (parseFloat(currFontSize) * 2).toString();
+
+        text.transition()
+          .delay(750)
+          .style("fill", "red")
+          .style("font-size", newFontSize)
+          .transition()
+          .duration(750)
+          .style("fill", currColor)
+          .style("font-size", currFontSize)
+          .transition()
+          .duration(750)
+          .style("fill", "red")
+          .style("font-size", newFontSize)
+          .transition()
+          .duration(750)
+          .style("fill", currColor)
+          .style("font-size", currFontSize);
+
+        // Pulse the link extension
+        const linkExtension = d3.select(path);
+        const currStroke = linkExtension.style("stroke");
+        const currStrokeWidth = linkExtension.style("stroke-width");
+        const newStrokeWidth = (parseFloat(currStrokeWidth) * 2).toString();
+
+        linkExtension.transition()
+          .delay(750)
+          .style("stroke", "red")
+          .style("stroke-width", newStrokeWidth)
+          .transition()
+          .duration(750)
+          .style("stroke", currStroke)
+          .style("stroke-width", currStrokeWidth)
+          .transition()
+          .duration(750)
+          .style("stroke", "red")
+          .style("stroke-width", newStrokeWidth)
+          .transition()
+          .duration(750)
+          .style("stroke", currStroke)
+          .style("stroke-width", currStrokeWidth);
+      } else {
+        //console.warn("findAndZoom failed. No coordinates found in path string for query:", name);
+      }
+    } else {
+      //console.warn("No path string found for leaf", name);
+    }
+
+
+
   }
 }

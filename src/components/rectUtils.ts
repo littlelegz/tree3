@@ -71,6 +71,10 @@ export function findAndZoom(name: string, svg: d3.Selection<SVGSVGElement, unkno
     .selectAll<SVGGElement, RadialNode>('g.inner-node')
     .filter(d => d.data.name === name);
 
+  const leaf = svg.select('g.leaves')
+    .selectAll<SVGTextElement, RadialNode>('text.leaf-label')
+    .filter(d => d.data.name === name);
+
   if (!node.empty()) {
     const nodeElement = node.node();
     const nodeData = node.data()[0];
@@ -88,7 +92,7 @@ export function findAndZoom(name: string, svg: d3.Selection<SVGSVGElement, unkno
     svg.transition()
       .duration(750)
       .call(zoom.transform as any, d3.zoomIdentity
-        .translate(-y + centerOffsetX, -x + centerOffsetY) // Hard coding these values is not ideal. TODO: Fix centering
+        .translate(-y + centerOffsetX, -x + centerOffsetY)
         .scale(1));
 
     const circle = d3.select(nodeElement).select('circle');
@@ -114,14 +118,79 @@ export function findAndZoom(name: string, svg: d3.Selection<SVGSVGElement, unkno
       .style("fill", currColor)
       .style("r", currRadius);
 
-  }
+  } else if (!leaf.empty()) {
+    const leafElement = leaf.node();
+    const leafData = leaf.data()[0];
 
-  const leaf = svg.select('g.leaves')
-    .selectAll<SVGGElement, RadialNode>('g.leaf')
-    .filter(d => d.data.name === name);
+    const path = leafData.linkExtensionNode;
+    if (path) {
+      const pathStrValue = path.getAttribute('d') || '';
+      const lastLCoords = pathStrValue.match(/V\s*([0-9.-]+)H\s*([0-9.-]+)/);
+      if (lastLCoords) {
+        const [_, x, y] = lastLCoords;
 
-  if (!leaf.empty()) {
-    console.log("Found leaf", leaf);
+        // Center the node
+        const centerOffestX = container.current.clientWidth / 2;
+        const centerOffestY = container.current.clientHeight / 2;
+
+        const zoom = d3.zoom().on("zoom", (event) => {
+          svg.select("g").attr("transform", event.transform);
+        });
+
+        // Apply transform here
+        svg.transition()
+          .duration(750)
+          .call(zoom.transform as any, d3.zoomIdentity
+            .translate(-y + centerOffestX, -x + centerOffestY)
+            .scale(1));
+
+        // Pulse the leaf label text
+        const text = d3.select(leafElement);
+        const currColor = text.style("fill");
+        const currSize = text.style("font-size");
+        const newSize = (parseFloat(currSize) * 2).toString();
+
+        text.transition()
+          .delay(750)
+          .style("fill", "red")
+          .style("font-size", newSize)
+          .transition()
+          .duration(750)
+          .style("fill", currColor)
+          .style("font-size", currSize)
+          .transition()
+          .duration(750)
+          .style("fill", "red")
+          .style("font-size", newSize)
+          .transition()
+          .duration(750)
+          .style("fill", currColor)
+          .style("font-size", currSize);
+
+        // Pulse the link extension
+        const linkExtension = d3.select(path);
+        const currStroke = linkExtension.style("stroke");
+        const currStrokeWidth = linkExtension.style("stroke-width");
+        const newStrokeWidth = (parseFloat(currStrokeWidth) * 2).toString();
+
+        linkExtension.transition()
+          .delay(750)
+          .style("stroke", "red")
+          .style("stroke-width", newStrokeWidth)
+          .transition()
+          .duration(750)
+          .style("stroke", currStroke)
+          .style("stroke-width", currStrokeWidth)
+          .transition()
+          .duration(750)
+          .style("stroke", "red")
+          .style("stroke-width", newStrokeWidth)
+          .transition()
+          .duration(750)
+          .style("stroke", currStroke)
+          .style("stroke-width", currStrokeWidth);
+      }
+    }
   }
 }
 

@@ -519,7 +519,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
 
     svg.transition()
       .duration(750)
-      .attr('transform', "translate(0,0)");
+      .attr('transform', "translate(0,0)"); // TODO recenter to initalTransform, not (0,0)
   };
 
   useImperativeHandle(ref, () => ({
@@ -534,7 +534,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     getContainer: () => containerRef.current,
     findAndZoom: (name: string, container: React.MutableRefObject<HTMLDivElement>) => {
       if (svgRef.current && varData) {
-        findAndZoom(name, d3.select(svgRef.current), container, scale, getBoundingBox(varData));
+        findAndZoom(name, d3.select(svgRef.current), container, scale);
       }
     },
   }));

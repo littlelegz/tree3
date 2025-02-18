@@ -291,10 +291,11 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
     // Draw leaf labels
     const leafLabels = svg.append("g")
       .attr("class", "leaves")
-      .selectAll("text")
+      .selectAll(".leaf-label")
       .data(varData.leaves())
       .join("text")
       .each(function (d: RadialNode) { d.labelElement = this as SVGTextElement; })
+      .attr("class", "leaf-label")
       .attr("dy", ".31em")
       .attr("transform", d => `translate(${(d.y ?? 0) + 4},${d.x})`)
       .text(d => d.data.name.replace(/_/g, " "))
