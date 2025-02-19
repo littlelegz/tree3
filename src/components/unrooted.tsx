@@ -25,6 +25,7 @@ export interface UnrootedTreeRef {
   recenterView: () => void;
   refresh: () => void;
   getRoot: () => UnrootedData | null;
+  getData: () => UnrootedData | null;
   getContainer: () => HTMLDivElement | null;
   findAndZoom: (name: string, container: React.MutableRefObject<HTMLDivElement>) => void;
 }
@@ -587,6 +588,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     recenterView: () => recenterView(),
     refresh: () => setRefreshTrigger(prev => prev + 1),
     getRoot: () => varData,
+    getData: () => varData,
     getContainer: () => containerRef.current,
     findAndZoom: (name: string, container: React.MutableRefObject<HTMLDivElement>) => {
       if (svgRef.current && varData) {

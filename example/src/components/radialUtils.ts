@@ -1,6 +1,6 @@
 import { RadialNode, D3Node } from './types';
 import * as d3 from 'd3';
-import { convertToD3Format } from './utils.ts';
+import { convertToD3Format, radialToD3Node } from './utils.ts';
 
 function getBoundingBox(node: RadialNode, isVariable: boolean): { minX: number; maxX: number; minY: number } {
   let bbox = {
@@ -137,15 +137,7 @@ export function toggleCollapseClade(node: RadialNode): void {
   }
 }
 
-interface TreeNode {
-  name?: string;
-  length?: number;
-  branchset: TreeNode[];
-  id?: number
-  parent?: TreeNode | null
-}
-
-export function reroot(node: RadialNode, data: TreeNode): RadialNode {
+export function reroot(node: RadialNode, data: RadialNode): RadialNode {
   // Already root
   if (!node.parent) return node;
 
@@ -156,47 +148,46 @@ export function reroot(node: RadialNode, data: TreeNode): RadialNode {
   var newRoot = data;
   while (queue.length > 0 && !found) {
     const current = queue.shift();
-    if (current?.branchset) {
-      for (const child of current.branchset) {
-        if (child.name === node.data.name) { // found node
+    if (current?.children) {
+      for (const child of current.children) {
+        if (child.data.name === node.data.name) { // found node
           found = true;
-          // remove node from parent's branchset
-          const index = current.branchset.indexOf(child);
-          current.branchset.splice(index, 1);
+          // remove node from parent's children
+          const index = current.children.indexOf(child);
+          current.children.splice(index, 1);
 
           newRoot = child;
 
           // Start flipping process
           let currentNode = child;
-          let parentNode: TreeNode | null = current;
+          let parentNode: d3.HierarchyNode<D3Node> | null = current;
 
           while (parentNode) {
-            // Remove current from parent's branchset
-            const index = parentNode.branchset.indexOf(currentNode);
-            if (index > -1) {
-              parentNode.branchset.splice(index, 1);
+            // Remove current from parent's children
+            if (parentNode.children) {
+              const index = parentNode.children.indexOf(currentNode);
+              if (index > -1) {
+                parentNode.children.splice(index, 1);
+              }
             }
 
-            // Add parent to current's branchset
-            currentNode.branchset.push(parentNode);
+            // Add parent to current's children
+            if (!currentNode.children) {
+              currentNode.children = [];
+            }
+            currentNode.children.push(parentNode);
 
             // Move up tree
             currentNode = parentNode;
             parentNode = parentNode.parent || null;
           }
-
-          const d3FormatRoot = convertToD3Format(newRoot);
-          if (!d3FormatRoot) {
-            throw new Error("Failed to convert new root to D3 format");
-          }
-          return tree(d3.hierarchy<D3Node>(d3FormatRoot)) as RadialNode;
+          
+          return tree(d3.hierarchy<D3Node>(radialToD3Node(newRoot))) as RadialNode;
         }
       }
-      queue.push(...current.branchset);
+      queue.push(...current.children);
     }
   }
-
-  console.log(node)
 
   return node;
 }

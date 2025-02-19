@@ -86,6 +86,11 @@ export interface UnrootedTreeProps {
     onClick: (node: UnrootedNode) => void;
     toShow: (node: UnrootedNode) => boolean;
   }];
+  customLinkMenuItems?: [{
+    label: (source: UnrootedNode, target: UnrootedNode) => string;
+    onClick: (source: UnrootedNode, target: UnrootedNode) => void;
+    toShow: (source: UnrootedNode, target: UnrootedNode) => boolean;
+  }];
   nodeStyler?: (node: UnrootedNode) => void;
   linkStyler?: (source: UnrootedNode, target: UnrootedNode) => void;
   leafStyler?: (node: UnrootedNode) => void;

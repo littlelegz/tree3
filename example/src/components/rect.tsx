@@ -144,6 +144,7 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
       .call(zoom);
 
     const svg = svgMain.append("g")
+      .attr("class", "tree")
       .attr("transform", `translate(50,0)`); // Move tree off the left edge of the screen
 
     // Styles TODO: Move to CSS
@@ -458,7 +459,9 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
             </a>
             <div className="dropdown-divider" />
             <a className="dropdown-item" onClick={() => {
-              setVarData(reroot(d, readTree(data))); // NOTE, can only reroot once. Calls will always be calculated from original tree
+              if (varData) {
+                setVarData(reroot(d, varData)); // NOTE, can only reroot once. Calls will always be calculated from original tree
+              }
             }}>
               Reroot Here
             </a>

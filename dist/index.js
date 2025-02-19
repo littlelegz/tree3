@@ -4398,12 +4398,11 @@ function readTree(text) {
 function selectAllLeaves(node) {
     var leaves = [];
     function traverse(currentNode) {
-        if (!currentNode.children) {
+        if (!currentNode.children || currentNode.children.length === 0) {
             leaves.push(currentNode);
         }
         else {
-            var children = currentNode.children || [];
-            children.forEach(function (child) { return traverse(child); });
+            currentNode.children.forEach(function (child) { return traverse(child); });
         }
     }
     traverse(node);
@@ -4757,15 +4756,15 @@ function findAndZoom$1(name, svg, container, variable) {
             .style("fill", "red")
             .style("r", newRadius)
             .transition()
-            .duration(500)
+            .duration(750)
             .style("fill", currColor)
             .style("r", currRadius)
             .transition()
-            .duration(500)
+            .duration(750)
             .style("fill", "red")
             .style("r", newRadius)
             .transition()
-            .duration(500)
+            .duration(750)
             .style("fill", currColor)
             .style("r", currRadius);
     }
@@ -4779,8 +4778,8 @@ function findAndZoom$1(name, svg, container, variable) {
             if (lastLCoords) {
                 lastLCoords[0]; var x = lastLCoords[1], y = lastLCoords[2];
                 // Center the node
-                var centerOffestX = container.current.clientWidth / 2;
-                var centerOffestY = container.current.clientHeight / 2;
+                var centerOffsetX = container.current.clientWidth / 2;
+                var centerOffsetY = container.current.clientHeight / 2;
                 var zoom$1 = zoom().on("zoom", function (event) {
                     svg.select("g").attr("transform", event.transform);
                 });
@@ -4788,7 +4787,7 @@ function findAndZoom$1(name, svg, container, variable) {
                 svg.transition()
                     .duration(750)
                     .call(zoom$1.transform, identity
-                    .translate(-y + centerOffestX, -x + centerOffestY)
+                    .translate(-y + centerOffsetX, -x + centerOffsetY)
                     .scale(1));
                 // Pulse the leaf label text
                 var text = select(leafElement);
@@ -5853,7 +5852,6 @@ function toggleHighlightTerminalLinks(node) {
         });
     }
 }
-// TODO, this centering function doesn't work as expected
 function findAndZoom(name, svg, container, scale) {
     var _a, _b;
     // Find node with name in tree
@@ -5873,15 +5871,15 @@ function findAndZoom(name, svg, container, scale) {
         var x = ((_a = nodeData.x) !== null && _a !== void 0 ? _a : 0) * scale;
         var y = ((_b = nodeData.y) !== null && _b !== void 0 ? _b : 0) * scale;
         // Center the node
-        var centerOffestX = container.current.clientWidth / 2;
-        var centerOffestY = container.current.clientHeight / 2;
+        var centerOffsetX = container.current.clientWidth / 2;
+        var centerOffsetY = container.current.clientHeight / 2;
         var zoom$1 = zoom().on("zoom", function (event) {
             svg.select("g").attr("transform", event.transform);
         });
         svg.transition()
             .duration(750)
             .call(zoom$1.transform, identity
-            .translate(-x + centerOffestX, -y + centerOffestY)
+            .translate(-x + centerOffsetX, -y + centerOffsetY)
             .scale(1));
         var circle = select(nodeElement).select('circle');
         var currRadius = circle.attr("r");
@@ -5917,8 +5915,8 @@ function findAndZoom(name, svg, container, scale) {
             if (lastLCoords) {
                 lastLCoords[0]; var x = lastLCoords[1], y = lastLCoords[2];
                 // Center the node
-                var centerOffestX = container.current.clientWidth / 2;
-                var centerOffestY = container.current.clientHeight / 2;
+                var centerOffsetX = container.current.clientWidth / 2;
+                var centerOffsetY = container.current.clientHeight / 2;
                 var zoom$1 = zoom().on("zoom", function (event) {
                     svg.select("g").attr("transform", event.transform);
                 });
@@ -5926,29 +5924,29 @@ function findAndZoom(name, svg, container, scale) {
                 svg.transition()
                     .duration(750)
                     .call(zoom$1.transform, identity
-                    .translate(-x + centerOffestX, -y + centerOffestY)
+                    .translate(-x + centerOffsetX, -y + centerOffsetY)
                     .scale(1));
                 // Pulse the leaf label and link extension
                 var text = select(leafElement);
                 var currColor = text.style("fill");
-                var currFontSize = text.style("font-size");
-                var newFontSize = (parseFloat(currFontSize) * 2).toString();
+                var currSize = text.style("font-size");
+                var newSize = (parseFloat(currSize) * 2).toString();
                 text.transition()
                     .delay(750)
                     .style("fill", "red")
-                    .style("font-size", newFontSize)
+                    .style("font-size", newSize)
                     .transition()
                     .duration(750)
                     .style("fill", currColor)
-                    .style("font-size", currFontSize)
+                    .style("font-size", currSize)
                     .transition()
                     .duration(750)
                     .style("fill", "red")
-                    .style("font-size", newFontSize)
+                    .style("font-size", newSize)
                     .transition()
                     .duration(750)
                     .style("fill", currColor)
-                    .style("font-size", currFontSize);
+                    .style("font-size", currSize);
                 // Pulse the link extension
                 var linkExtension = select(path);
                 var currStroke = linkExtension.style("stroke");
@@ -6089,8 +6087,6 @@ var UnrootedTree = forwardRef(function (_a, ref) {
         });
         // Apply zoom behavior
         svgMain.call(zoom$1);
-        // Set initial transform
-        svgMain.call(zoom$1.transform, initialTransform);
         // Append styles
         svg.append("style").text("\n      .link--active {\n        stroke: #000 !important;\n        stroke-width: 2px;\n      }\n\n      .link--important {\n        stroke: #00F !important;\n        stroke-width: 1.5px;\n      }\n\n      .link-extension--active {\n        stroke-opacity: .6;\n      }\n\n      .label--active {\n        font-weight: bold;\n      }\n\n      .node--active {\n        stroke: #003366 !important;\n        fill: #0066cc !important;\n      }\n\n      .link--highlight {\n        stroke: #FF0000 !important;\n        stroke-width: 1.5px;\n      }\n\n      .link--hidden {\n        display: none;\n      }\n\n      .node--collapsed {\n        r: 4px !important; \n        fill: #0066cc !important;\n      }\n\n      .tooltip-node {\n        position: absolute;\n        background: white;\n        padding: 5px;\n        border: 1px solid #ccc;\n        border-radius: 4px;\n        font-size: 12px;\n        z-index: 10;\n      }\n    ");
         // Link functions
@@ -6362,10 +6358,15 @@ var UnrootedTree = forwardRef(function (_a, ref) {
         leafLabelsRef.current = leafLabels;
         svgRef.current = svgMain.node();
         // Finally, zoom to center
-        if (svgRef.current && containerRef.current && homeNode) {
-            findAndZoom(homeNode, select(svgRef.current), containerRef, scale);
+        if (svgRef.current && containerRef.current) {
+            if (homeNode) {
+                findAndZoom(homeNode, select(svgRef.current), containerRef, scale);
+            }
+            else {
+                svgMain.call(zoom$1.transform, initialTransform);
+            }
         }
-    }, [data, containerRef, refreshTrigger]);
+    }, [data, refreshTrigger]);
     useEffect(function () {
         var _a, _b;
         (_a = leafLabelsRef.current) === null || _a === void 0 ? void 0 : _a.style("display", displayLeaves ? "block" : "none");

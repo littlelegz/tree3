@@ -1,4 +1,4 @@
-import { TreeNode, D3Node, RadialNode } from './types.ts';
+import { TreeNode, D3Node, RadialNode, UnrootedNode } from './types.ts';
 import * as d3 from 'd3';
 
 export const convertToD3Format = (node: TreeNode | null): D3Node | null => {
@@ -95,15 +95,14 @@ export function readTree(text: string): TreeNode {
   return (root);
 }
 
-export function selectAllLeaves(node: RadialNode): RadialNode[] {
-  const leaves: RadialNode[] = [];
+export function selectAllLeaves<T extends { children?: T[] }>(node: T): T[] {
+  const leaves: T[] = [];
   
-  function traverse(currentNode: RadialNode) {
-    if (!currentNode.children) {
+  function traverse(currentNode: T) {
+    if (!currentNode.children || currentNode.children.length === 0) {
       leaves.push(currentNode);
     } else {
-      const children = currentNode.children || [];
-      children.forEach(child => traverse(child));
+      currentNode.children.forEach(child => traverse(child));
     }
   }
 
@@ -111,10 +110,10 @@ export function selectAllLeaves(node: RadialNode): RadialNode[] {
   return leaves;
 }
 
-export function selectAllNodes(node: RadialNode): RadialNode[] {
-  const nodes: RadialNode[] = [];
+export function selectAllNodes<T extends { children?: T[] }>(node: T): T[] {
+  const nodes: T[] = [];
   
-  function traverse(currentNode: RadialNode) {
+  function traverse(currentNode: T) {
     nodes.push(currentNode);
     if (currentNode.children) {
       currentNode.children.forEach(child => traverse(child));

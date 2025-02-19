@@ -41,7 +41,12 @@ function App() {
           <RectTree data={tree} ref={rectRef} />
         </div>
         <div ref={unrootedContainerRef} style={{ width: "33%", height: "500px", border: "1px solid black", overflow: "hidden" }}>
-          <UnrootedTree data={tree} ref={unrootedRef} onNodeClick={(ev, node) => console.log(node)}/>
+          <UnrootedTree 
+          data={tree} 
+          ref={unrootedRef} 
+          onNodeClick={(ev, node) => console.log(node)}
+          homeNode={"bilR"}
+          />
         </div>
       </div>
       <div>
@@ -60,8 +65,8 @@ function App() {
         }}>
           Search
         </button>
-        <button onClick={() => setVariableLinks(prev => !prev)}>
-          Variable Links
+        <button onClick={() => {rectRef.current.refresh(); radialRef.current.refresh(); unrootedRef.current.refresh();}}>
+          Reset
         </button>
       </div>
     </div>
