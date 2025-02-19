@@ -143,7 +143,6 @@ export function toggleHighlightTerminalLinks(node: UnrootedNode): void {
   }
 }
 
-// TODO, this centering function doesn't work as expected
 export function findAndZoom(name: string,
   svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
   container: React.MutableRefObject<HTMLDivElement>,
@@ -171,8 +170,8 @@ export function findAndZoom(name: string,
     const y = (nodeData.y ?? 0) * scale;
 
     // Center the node
-    const centerOffestX = container.current.clientWidth / 2;
-    const centerOffestY = container.current.clientHeight / 2;
+    const centerOffsetX = container.current.clientWidth / 2;
+    const centerOffsetY = container.current.clientHeight / 2;
 
     const zoom = d3.zoom().on("zoom", (event) => {
       svg.select("g").attr("transform", event.transform);
@@ -181,7 +180,7 @@ export function findAndZoom(name: string,
     svg.transition()
       .duration(750)
       .call(zoom.transform as any, d3.zoomIdentity
-        .translate(-x + centerOffestX, -y + centerOffestY)
+        .translate(-x + centerOffsetX, -y + centerOffsetY)
         .scale(1));
 
     const circle = d3.select(nodeElement).select('circle');
@@ -223,8 +222,8 @@ export function findAndZoom(name: string,
         const [_, x, y] = lastLCoords;
 
         // Center the node
-        const centerOffestX = container.current.clientWidth / 2;
-        const centerOffestY = container.current.clientHeight / 2;
+        const centerOffsetX = container.current.clientWidth / 2;
+        const centerOffsetY = container.current.clientHeight / 2;
 
         const zoom = d3.zoom().on("zoom", (event) => {
           svg.select("g").attr("transform", event.transform);
@@ -234,31 +233,31 @@ export function findAndZoom(name: string,
         svg.transition()
           .duration(750)
           .call(zoom.transform as any, d3.zoomIdentity
-            .translate(-x + centerOffestX, -y + centerOffestY)
+            .translate(-x + centerOffsetX, -y + centerOffsetY)
             .scale(1));
 
         // Pulse the leaf label and link extension
         const text = d3.select(leafElement);
         const currColor = text.style("fill");
-        const currFontSize = text.style("font-size");
-        const newFontSize = (parseFloat(currFontSize) * 2).toString();
+        const currSize = text.style("font-size");
+        const newSize = (parseFloat(currSize) * 2).toString();
 
         text.transition()
           .delay(750)
           .style("fill", "red")
-          .style("font-size", newFontSize)
+          .style("font-size", newSize)
           .transition()
           .duration(750)
           .style("fill", currColor)
-          .style("font-size", currFontSize)
+          .style("font-size", currSize)
           .transition()
           .duration(750)
           .style("fill", "red")
-          .style("font-size", newFontSize)
+          .style("font-size", newSize)
           .transition()
           .duration(750)
           .style("fill", currColor)
-          .style("font-size", currFontSize);
+          .style("font-size", currSize);
 
         // Pulse the link extension
         const linkExtension = d3.select(path);

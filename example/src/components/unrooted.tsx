@@ -24,7 +24,7 @@ export interface UnrootedTreeRef {
   setDisplayLeaves: (value: boolean) => void;
   recenterView: () => void;
   refresh: () => void;
-  getRoot: () => UnrootedData | null; 
+  getRoot: () => UnrootedData | null;
   getContainer: () => HTMLDivElement | null;
   findAndZoom: (name: string, container: React.MutableRefObject<HTMLDivElement>) => void;
 }
@@ -183,8 +183,6 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
 
     // Apply zoom behavior
     svgMain.call(zoom);
-    // Set initial transform
-    svgMain.call(zoom.transform, initialTransform);
 
 
     // Append styles
@@ -395,6 +393,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     if (leafStyler) {
       leafLabels.each((d) => leafStyler(d));
     }
+
     // Node functions
     function nodeHovered(active: boolean): (event: MouseEvent, d: UnrootedNode) => void {
       return function (this: SVGGElement, event, d) {
@@ -556,15 +555,15 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     leafLabelsRef.current = leafLabels as unknown as d3.Selection<SVGTextElement, UnrootedNode, SVGGElement, unknown>;
     svgRef.current = svgMain.node();
 
-    // Append SVG to container
-    containerRef.current.innerHTML = ''; // Clear existing content
-    containerRef.current.appendChild(svgMain.node()!);
-
     // Finally, zoom to center
-    if (svgRef.current && containerRef.current && homeNode) {
-      findAndZoom(homeNode, d3.select(svgRef.current), containerRef as React.MutableRefObject<HTMLDivElement>, scale);
+    if (svgRef.current && containerRef.current) {
+      if (homeNode) {
+        findAndZoom(homeNode, d3.select(svgRef.current), containerRef as React.MutableRefObject<HTMLDivElement>, scale);
+      } else {
+        svgMain.call(zoom.transform, initialTransform);
+      }
     }
-  }, [data, containerRef, refreshTrigger]);
+  }, [data, refreshTrigger]);
 
   useEffect(() => { // Toggle leaf label visibility
     leafLabelsRef.current?.style("display", displayLeaves ? "block" : "none");

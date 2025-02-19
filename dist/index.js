@@ -4636,7 +4636,6 @@ function findAndZoom$2(name, svg, container, variable) {
             var lastLCoords = pathStrValue.match(/L\s*([0-9.-]+)\s*,?\s*([0-9.-]+)\s*$/);
             if (lastLCoords) {
                 lastLCoords[0]; var x = lastLCoords[1], y = lastLCoords[2];
-                console.log(x, y);
                 // Center the node
                 var centerOffestX = container.current.clientWidth / 2;
                 var centerOffestY = container.current.clientHeight / 2;
@@ -6362,12 +6361,9 @@ var UnrootedTree = forwardRef(function (_a, ref) {
         nodesRef.current = nodes;
         leafLabelsRef.current = leafLabels;
         svgRef.current = svgMain.node();
-        // Append SVG to container
-        containerRef.current.innerHTML = ''; // Clear existing content
-        containerRef.current.appendChild(svgMain.node());
         // Finally, zoom to center
-        if (svgRef.current && containerRef.current) {
-            findAndZoom(homeNode || varData.data.name, select(svgRef.current), containerRef, scale);
+        if (svgRef.current && containerRef.current && homeNode) {
+            findAndZoom(homeNode, select(svgRef.current), containerRef, scale);
         }
     }, [data, containerRef, refreshTrigger]);
     useEffect(function () {
@@ -6389,7 +6385,7 @@ var UnrootedTree = forwardRef(function (_a, ref) {
         setDisplayLeaves: function (value) { return setDisplayLeaves(value); },
         recenterView: function () { return recenterView(); },
         refresh: function () { return setRefreshTrigger(function (prev) { return prev + 1; }); },
-        getData: function () { return varData; },
+        getRoot: function () { return varData; },
         getContainer: function () { return containerRef.current; },
         findAndZoom: function (name, container) {
             if (svgRef.current && varData) {
