@@ -217,6 +217,11 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
         stroke-width: 1.5px;
       }
 
+      .link--root {
+        stroke: #0000FF;
+        stroke-width: 3px;
+      }
+
       .link--hidden {
         display: none;
       }
@@ -657,9 +662,11 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
       .attr('transform', "translate(0,0)"); // TODO recenter to initalTransform, not (0,0)
   };
 
-  const rootOnBranch = useMemo(() => (d: Link<UnrootedNode>) => { // TODO
-    // TODO
-    console.log("Root on branch", d);
+  const rootOnBranch = useMemo(() => (d: Link<UnrootedNode>) => { 
+    if (d.target.linkNode) {
+      d3.select(d.target.linkNode).classed('link--root', true);
+    }
+
     addRoot(varData?.data ?? [], d.source, d.target);
   }, [varData]);
 
@@ -761,6 +768,8 @@ function addRoot(df: UnrootedNode[], rootLeft: UnrootedNode, rootRight: Unrooted
     while (parent) {
       parent.children = parent.children.filter(child => child !== current);
       current.children.push(parent);
+      
+      // TODO: Update forwardLinkNodes, and linkNode by creating new path elements/links and refresh tree render
 
       // move up the tree
       current = parent;
