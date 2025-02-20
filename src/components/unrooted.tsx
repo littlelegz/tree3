@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 import * as d3 from 'd3';
 import { TreeNode, UnrootedData, UnrootedNode, Link, EqAngNode, UnrootedTreeProps } from './types';
@@ -32,7 +32,6 @@ export interface UnrootedTreeRef {
 
 const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
   data,
-  width = 500,
   scale = 500,
   onNodeClick,
   onLinkClick,
@@ -45,10 +44,12 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
   onLinkMouseOut,
   customNodeMenuItems,
   customLeafMenuItems,
+  customLinkMenuItems,
   nodeStyler,
   linkStyler,
   leafStyler,
-  homeNode
+  homeNode,
+  linkRoot = true,
 }, ref) => {
   const [displayLeaves, setDisplayLeaves] = useState(true);
   const linkExtensionRef = useRef<d3.Selection<SVGPathElement, Link<UnrootedNode>, SVGGElement, unknown>>(null);
@@ -254,6 +255,59 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     }
 
     function linkClicked(event: MouseEvent, d: Link<UnrootedNode>): void {
+      d3.selectAll('.tooltip-node').remove();
+
+      const menu = d3.select(containerRef.current)
+        .append('div')
+        .attr('class', 'menu-node')
+        .style('position', 'fixed')
+        .style('left', `${event.clientX + 10}px`)
+        .style('top', `${event.clientY - 10}px`)
+        .style('opacity', 1)
+        .node();
+
+      const MenuContent = (
+        <>
+          <div className="menu-header">{d.source.thisName}-{d.target.thisName}</div>
+          <div className="menu-buttons">
+            <div className="dropdown-divider" />
+
+            <a className="dropdown-item" onClick={() => rootOnBranch(d)}>
+              Root Here
+            </a>
+            <div className="dropdown-divider" />
+            {/* Custom menu items */}
+            {customLinkMenuItems?.map(item => {
+              if (item.toShow(d.source, d.target)) {
+                return (
+                  <a className="dropdown-item" onClick={() => { item.onClick(d.source, d.target); menu?.remove(); }}>
+                    {item.label(d.source, d.target)}
+                  </a>
+                );
+              }
+            })}
+          </div>
+        </>
+      );
+
+      if (menu) {
+        const root = createRoot(menu);
+        root.render(MenuContent);
+
+        setTimeout(() => {
+          const handleClickOutside = (e: MouseEvent) => {
+            if (menu && !menu.contains(e.target as Node)) {
+              try {
+                menu.remove();
+              } catch (e) { // When rerooting, tree display is refreshed and menu is removed
+                console.error(e);
+              }
+              window.removeEventListener('click', handleClickOutside);
+            }
+          };
+          window.addEventListener('click', handleClickOutside);
+        }, 5);
+      }
       const linkElement = d3.select(event.target as SVGPathElement);
       const isHighlighted = linkElement.classed('link--highlight');
 
@@ -261,6 +315,30 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
         .classed('link--highlight', !isHighlighted)
         .raise();
       onLinkClick?.(event, d.source, d.target);
+    }
+
+    if (linkRoot) { // Root (Node1) does not have links connecting to or from it
+      const root = tree.data[tree.data.length - 1]; // Root is always the last one to be read
+      // find the first nontip child node
+      const firstChild = root.children.find(child => !child.isTip);
+      const tips = root.children.filter(child => child.isTip);
+      if (firstChild) {
+        // Create a link from root to firstChild
+        const link = {
+          source: root,
+          target: firstChild
+        };
+        tree.edges.push(link);
+      }
+      if (tips) {
+        tips.forEach(tip => {
+          const link = {
+            source: root,
+            target: tip
+          };
+          tree.edges.push(link);
+        });
+      }
     }
 
     // Draw links first, then calculate and draw extension
@@ -514,7 +592,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     const nodes = svg.append("g")
       .attr("class", "nodes")
       .selectAll(".node")
-      .data(tree.data.filter(d => !d.isTip && d.parent)) // Don't draw leaf nodes, and skip root
+      .data(tree.data.filter(d => !d.isTip)) // Don't draw leaf nodes, and skip root
       .join("g")
       .each(function (d: UnrootedNode) { d.nodeElement = this as SVGGElement; })
       .attr("class", "inner-node")
@@ -579,6 +657,12 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
       .attr('transform', "translate(0,0)"); // TODO recenter to initalTransform, not (0,0)
   };
 
+  const rootOnBranch = useMemo(() => (d: Link<UnrootedNode>) => { // TODO
+    // TODO
+    console.log("Root on branch", d);
+    addRoot(varData?.data ?? [], d.source, d.target);
+  }, [varData]);
+
   useImperativeHandle(ref, () => ({
     getLinkExtensions: () => linkExtensionRef.current,
     getLinks: () => linkRef.current,
@@ -607,6 +691,8 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     </div>
   );
 });
+
+
 
 
 /**
@@ -645,6 +731,57 @@ function edges(df: UnrootedNode[]) {
     result.push(pair);
   }
   return result;
+}
+
+function addRoot(df: UnrootedNode[], rootLeft: UnrootedNode, rootRight: UnrootedNode): UnrootedNode[] {
+  var root: UnrootedNode = {
+    parent: null,
+    parentId: null,
+    parentName: null,
+    thisId: df.length,
+    thisName: 'root',
+    children: [rootLeft, rootRight],
+    length: 0,
+    isTip: false,
+    x: 0,
+    y: 0,
+    angle: 0,
+    data: {
+      name: 'root',
+      value: 0
+    },
+    branchset: [rootLeft, rootRight]
+  };
+
+  function swap(node: UnrootedNode) {
+    let current = node;
+    let parent = node.parent;
+
+    //remove current from parent's children, add parent to current's children
+    while (parent) {
+      parent.children = parent.children.filter(child => child !== current);
+      current.children.push(parent);
+
+      // move up the tree
+      current = parent;
+      parent = parent.parent || null;
+    }
+  }
+
+  if (rootLeft.parentName === rootRight.thisName) { // rootRight child-parent relationships are reversed
+    // recursively swap parent and child
+    rootRight.children = rootRight.children.filter(child => child !== rootLeft)
+    swap(rootRight);
+  } else {
+    rootLeft.children = rootLeft.children.filter(child => child !== rootRight)
+    swap(rootLeft);
+  }
+
+  rootLeft.parent = root;
+  rootRight.parent = root;
+
+  df.push(root);
+  return df;
 }
 
 /**

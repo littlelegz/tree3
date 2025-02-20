@@ -5735,6 +5735,8 @@ var RadialTree = React.forwardRef(function (_a, ref) {
 var getAllLeafCoords = function (node, scale) {
     var coords = [];
     var source = node.parent;
+    if (!source)
+        return coords;
     var target = node;
     // Accounting for linkExtensions
     var sourceX = source.x * scale;
@@ -5976,7 +5978,7 @@ function findAndZoom(name, svg, container, scale) {
 }
 
 var UnrootedTree = React.forwardRef(function (_a, ref) {
-    var data = _a.data; _a.width; var _c = _a.scale, scale = _c === void 0 ? 500 : _c, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler, homeNode = _a.homeNode;
+    var data = _a.data, _b = _a.scale, scale = _b === void 0 ? 500 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, customLinkMenuItems = _a.customLinkMenuItems, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler, homeNode = _a.homeNode, _c = _a.linkRoot, linkRoot = _c === void 0 ? true : _c;
     var _d = React.useState(true), displayLeaves = _d[0], setDisplayLeaves = _d[1];
     var linkExtensionRef = React.useRef(null);
     var linkRef = React.useRef(null);
@@ -6108,12 +6110,76 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
             };
         }
         function linkClicked(event, d) {
+            selectAll('.tooltip-node').remove();
+            var menu = select(containerRef.current)
+                .append('div')
+                .attr('class', 'menu-node')
+                .style('position', 'fixed')
+                .style('left', "".concat(event.clientX + 10, "px"))
+                .style('top', "".concat(event.clientY - 10, "px"))
+                .style('opacity', 1)
+                .node();
+            var MenuContent = (React.createElement(React.Fragment, null,
+                React.createElement("div", { className: "menu-header" },
+                    d.source.thisName,
+                    "-",
+                    d.target.thisName),
+                React.createElement("div", { className: "menu-buttons" },
+                    React.createElement("div", { className: "dropdown-divider" }),
+                    React.createElement("a", { className: "dropdown-item", onClick: function () { return rootOnBranch(d); } }, "Root Here"),
+                    React.createElement("div", { className: "dropdown-divider" }), customLinkMenuItems === null || customLinkMenuItems === void 0 ? void 0 :
+                    customLinkMenuItems.map(function (item) {
+                        if (item.toShow(d.source, d.target)) {
+                            return (React.createElement("a", { className: "dropdown-item", onClick: function () { item.onClick(d.source, d.target); menu === null || menu === void 0 ? void 0 : menu.remove(); } }, item.label(d.source, d.target)));
+                        }
+                    }))));
+            if (menu) {
+                var root = client.createRoot(menu);
+                root.render(MenuContent);
+                setTimeout(function () {
+                    var handleClickOutside = function (e) {
+                        if (menu && !menu.contains(e.target)) {
+                            try {
+                                menu.remove();
+                            }
+                            catch (e) { // When rerooting, tree display is refreshed and menu is removed
+                                console.error(e);
+                            }
+                            window.removeEventListener('click', handleClickOutside);
+                        }
+                    };
+                    window.addEventListener('click', handleClickOutside);
+                }, 5);
+            }
             var linkElement = select(event.target);
             var isHighlighted = linkElement.classed('link--highlight');
             linkElement
                 .classed('link--highlight', !isHighlighted)
                 .raise();
             onLinkClick === null || onLinkClick === void 0 ? void 0 : onLinkClick(event, d.source, d.target);
+        }
+        if (linkRoot) { // Root (Node1) does not have links connecting to or from it
+            var root_1 = tree.data[tree.data.length - 1]; // Root is always the last one to be read
+            // find the first nontip child node
+            var firstChild = root_1.children.find(function (child) { return !child.isTip; });
+            var tips = root_1.children.filter(function (child) { return child.isTip; });
+            if (firstChild) {
+                // Create a link from root to firstChild
+                var link = {
+                    source: root_1,
+                    target: firstChild
+                };
+                tree.edges.push(link);
+            }
+            if (tips) {
+                tips.forEach(function (tip) {
+                    var link = {
+                        source: root_1,
+                        target: tip
+                    };
+                    tree.edges.push(link);
+                });
+            }
         }
         // Draw links first, then calculate and draw extension
         var links = svg.append("g")
@@ -6322,7 +6388,7 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
         var nodes = svg.append("g")
             .attr("class", "nodes")
             .selectAll(".node")
-            .data(tree.data.filter(function (d) { return !d.isTip && d.parent; })) // Don't draw leaf nodes, and skip root
+            .data(tree.data.filter(function (d) { return !d.isTip; })) // Don't draw leaf nodes, and skip root
             .join("g")
             .each(function (d) { d.nodeElement = this; })
             .attr("class", "inner-node")
@@ -6380,6 +6446,12 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
             .duration(750)
             .attr('transform', "translate(0,0)"); // TODO recenter to initalTransform, not (0,0)
     };
+    var rootOnBranch = React.useMemo(function () { return function (d) {
+        var _a;
+        // TODO
+        console.log("Root on branch", d);
+        addRoot((_a = varData === null || varData === void 0 ? void 0 : varData.data) !== null && _a !== void 0 ? _a : [], d.source, d.target);
+    }; }, [varData]);
     React.useImperativeHandle(ref, function () { return ({
         getLinkExtensions: function () { return linkExtensionRef.current; },
         getLinks: function () { return linkRef.current; },
@@ -6389,6 +6461,7 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
         recenterView: function () { return recenterView(); },
         refresh: function () { return setRefreshTrigger(function (prev) { return prev + 1; }); },
         getRoot: function () { return varData; },
+        getData: function () { return varData; },
         getContainer: function () { return containerRef.current; },
         findAndZoom: function (name, container) {
             if (svgRef.current && varData) {
@@ -6436,6 +6509,51 @@ function edges(df) {
         result.push(pair);
     }
     return result;
+}
+function addRoot(df, rootLeft, rootRight) {
+    var root = {
+        parent: null,
+        parentId: null,
+        parentName: null,
+        thisId: df.length,
+        thisName: 'root',
+        children: [rootLeft, rootRight],
+        length: 0,
+        isTip: false,
+        x: 0,
+        y: 0,
+        angle: 0,
+        data: {
+            name: 'root',
+            value: 0
+        },
+        branchset: [rootLeft, rootRight]
+    };
+    function swap(node) {
+        var current = node;
+        var parent = node.parent;
+        //remove current from parent's children, add parent to current's children
+        while (parent) {
+            parent.children = parent.children.filter(function (child) { return child !== current; });
+            current.children.push(parent);
+            // move up the tree
+            current = parent;
+            parent = parent.parent || null;
+        }
+    }
+    if (rootLeft.parentName === rootRight.thisName) { // rootRight child-parent relationships are reversed
+        // recursively swap parent and child
+        rootRight.children = rootRight.children.filter(function (child) { return child !== rootLeft; });
+        swap(rootRight);
+    }
+    else {
+        rootLeft.children = rootLeft.children.filter(function (child) { return child !== rootRight; });
+        swap(rootLeft);
+    }
+    rootLeft.parent = root;
+    rootRight.parent = root;
+    df.push(root);
+    return df;
 }
 /**
  * Convert parsed Newick tree from readTree() into data

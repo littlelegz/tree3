@@ -4,6 +4,7 @@ import * as d3 from 'd3';
 const getAllLeafCoords = (node: UnrootedNode, scale: number): Array<{ x: number, y: number }> => {
   const coords: Array<{ x: number, y: number }> = [];
   const source = node.parent as UnrootedNode;
+  if (!source) return coords;
   const target = node;
 
   // Accounting for linkExtensions
@@ -68,7 +69,7 @@ export function highlightClade(node: UnrootedNode, active: boolean, svg: d3.Sele
     const nodeX = node.x * scale;
     const nodeY = node.y * scale;
 
-    svg.insert('path', ':first-child')
+    const highlight = svg.insert('path', ':first-child')
       .attr('class', 'highlight-box')
       .attr('d', complexPath(childrenCoords, nodeX, nodeY))
       .style('fill', 'rgba(255, 255, 0, 0.2)')

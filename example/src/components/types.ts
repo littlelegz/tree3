@@ -65,7 +65,6 @@ export interface RectNode extends d3.HierarchyNode<D3Node> {
 
 export interface UnrootedTreeProps {
   data: string;
-  width?: number;
   scale?: number;
   onNodeClick?: (event: MouseEvent, node: UnrootedNode) => void;
   onNodeMouseOver?: (event: MouseEvent, node: UnrootedNode) => void;
@@ -95,6 +94,7 @@ export interface UnrootedTreeProps {
   linkStyler?: (source: UnrootedNode, target: UnrootedNode) => void;
   leafStyler?: (node: UnrootedNode) => void;
   homeNode: string;
+  linkRoot: boolean;
 }
 
 export interface UnrootedNode extends TreeNode {
