@@ -133,4 +133,8 @@ export interface EqAngNode extends TreeNode {
 export interface UnrootedData {
   data: UnrootedNode[];
   edges: Link<UnrootedNode>[];
+  root?: {
+    node: UnrootedNode;
+    edges: Link<UnrootedNode>[];
+  }
 }

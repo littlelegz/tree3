@@ -62,6 +62,19 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [varData, setVarData] = useState<UnrootedData | null>(null);
 
+  // Read tree and calculate layout
+  useEffect(() => {
+    if (!data) return;
+    const tree: UnrootedData = {
+      data: [],
+      edges: []
+    };
+    const eq = fortify(equalAngleLayout(readTree(data)));
+    tree.data = eq;
+    tree.edges = edges(eq);
+    setVarData(tree);
+  }, [data, refreshTrigger]);
+
   // Main helper methods
   const getBoundingBox = (data: UnrootedData) => { // Used for centering the tree during first render
     const nodes: UnrootedNode[] = data.data;
@@ -140,25 +153,13 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
   }
 
   useEffect(() => { // Render tree
-    if (!containerRef.current || !data) return;
-
-    const tree: UnrootedData = {
-      data: [], // UnrootedNode[]
-      edges: [] // Link<UnrootedNode>[]
-    };
-
-    // Calculating links and nodes for unrooted tree
-    const eq = fortify(equalAngleLayout(readTree(data)));
-    tree.data = eq;
-    tree.edges = edges(eq);
-
-    setVarData(tree);
+    if (!containerRef.current || !varData) return;
 
     // Clear existing content
     d3.select(containerRef.current).selectAll("*").remove();
 
     // Initialize SVG Main container, used for zoom/pan listening
-    const bbox = getBoundingBox(tree);
+    const bbox = getBoundingBox(varData);
     const initialScale = 0.5;
     const translateX = (containerRef.current.clientWidth - bbox.width * initialScale) / 2 - bbox.x * initialScale;
     const translateY = (containerRef.current.clientHeight - bbox.height * initialScale) / 2 - bbox.y * initialScale;
@@ -178,7 +179,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
 
     // Create zoom behavior
     const zoom = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.5, 8])
+      .scaleExtent([0.2, 8])
       .on('zoom', (event) => {
         svg.attr('transform', event.transform);
       });
@@ -323,7 +324,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     }
 
     if (linkRoot) { // Root (Node1) does not have links connecting to or from it
-      const root = tree.data[tree.data.length - 1]; // Root is always the last one to be read
+      const root = varData.data[varData.data.length - 1]; // Root is always the last one to be read
       // find the first nontip child node
       const firstChild = root.children.find(child => !child.isTip);
       const tips = root.children.filter(child => child.isTip);
@@ -333,7 +334,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
           source: root,
           target: firstChild
         };
-        tree.edges.push(link);
+        varData.edges.push(link);
       }
       if (tips) {
         tips.forEach(tip => {
@@ -341,7 +342,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
             source: root,
             target: tip
           };
-          tree.edges.push(link);
+          varData.edges.push(link);
         });
       }
     }
@@ -352,7 +353,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
       .attr("fill", "none")
       .attr("stroke", "#444")
       .selectAll("path")
-      .data(tree.edges)
+      .data(varData.edges)
       .join("path")
       .each(function (d: Link<UnrootedNode>) {
         d.target.linkNode = this as SVGPathElement;
@@ -452,7 +453,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     const leafLabels = svg.append("g")
       .attr("class", "leaves")
       .selectAll(".leaf-label")
-      .data(tree.data.filter(d => d.isTip))
+      .data(varData.data.filter(d => d.isTip))
       .join("text")
       .each(function (d: UnrootedNode) { d.labelElement = this as SVGTextElement; })
       .attr("class", "leaf-label")
@@ -597,7 +598,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     const nodes = svg.append("g")
       .attr("class", "nodes")
       .selectAll(".node")
-      .data(tree.data.filter(d => !d.isTip)) // Don't draw leaf nodes, and skip root
+      .data(varData.data.filter(d => !d.isTip)) // Don't draw leaf nodes, and skip root
       .join("g")
       .each(function (d: UnrootedNode) { d.nodeElement = this as SVGGElement; })
       .attr("class", "inner-node")
@@ -628,10 +629,31 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
       .attr("stroke-opacity", 0.25)
       .attr("stroke-dasharray", "4,4")
       .selectAll("path")
-      .data(tree.edges.filter(d => d.target.children.length === 0)) // targets nodes without children
+      .data(varData.edges.filter(d => d.target.children.length === 0)) // targets nodes without children
       .join("path")
       .each(function (d: Link<UnrootedNode>) { d.target.linkExtensionNode = this as SVGPathElement; })
       .attr("d", linkExtension);
+
+    if (varData.root) {
+      const rootLinks = svg.append("g")
+        .attr("class", "root-links")
+        .attr("fill", "none")
+        .attr("stroke", "#000")
+        .attr("stroke-width", 3)
+        .selectAll("path")
+        .data(varData.root.edges)
+        .join("path")
+        .attr("d", linkPath);
+      
+      const rootNode = svg.append("g")
+        .attr("class", "root-node")
+        .attr("transform", d => `translate(${varData.root.node.x * scale}, ${varData.root.node.y * scale})`)
+        .append("circle")
+        .attr("r", 5)
+        .style("fill", "#fff")
+        .style("stroke", "steelblue")
+        .style("stroke-width", 1.5);
+    }
 
     linkExtensionRef.current = linkExtensions as unknown as d3.Selection<SVGPathElement, Link<UnrootedNode>, SVGGElement, unknown>;
     linkRef.current = links as unknown as d3.Selection<SVGPathElement, Link<UnrootedNode>, SVGGElement, unknown>;
@@ -647,7 +669,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
         svgMain.call(zoom.transform, initialTransform);
       }
     }
-  }, [data, refreshTrigger]);
+  }, [varData]);
 
   useEffect(() => { // Toggle leaf label visibility
     leafLabelsRef.current?.style("display", displayLeaves ? "block" : "none");
@@ -662,12 +684,47 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
       .attr('transform', "translate(0,0)"); // TODO recenter to initalTransform, not (0,0)
   };
 
-  const rootOnBranch = useMemo(() => (d: Link<UnrootedNode>) => { 
-    if (d.target.linkNode) {
-      d3.select(d.target.linkNode).classed('link--root', true);
+  const rootOnBranch = useMemo(() => (d: Link<UnrootedNode>) => {
+    const rootNode = {
+      parent: null,
+      parentId: null,
+      parentName: null,
+      thisName: 'root',
+      thisId: -1,
+      children: [d.source, d.target],
+      length: 0,
+      isTip: false,
+      x: (d.source.x + d.target.x) / 2,
+      y: (d.source.y + d.target.y) / 2,
+      angle: 0,
+      data: {
+        name: 'root',
+        value: 0
+      },
+      branchset: [d.source, d.target]
     }
 
-    addRoot(varData?.data ?? [], d.source, d.target);
+    const rootEdges = [{
+      source: rootNode,
+      target: d.source
+    }, {
+      source: rootNode,
+      target: d.target
+    }]
+
+    const newData = addRoot(varData?.data ?? [], d.source, d.target);
+    var newEdges = edges(newData);
+
+    if (varData) {
+      setVarData({
+        data: newData,
+        edges: newEdges,
+        root: {
+          node: rootNode,
+          edges: rootEdges
+        }
+      });
+    }
   }, [varData]);
 
   useImperativeHandle(ref, () => ({
@@ -713,7 +770,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
  * are the $edge slot. I think.
  * - Removed rectangular layout related code
  * - Simplified return data structure to just the source and target
- * - Input is now object of type UnrootedData, calculated edges are 
+ * - Input is now object of type UnrootedData, calculated edges are Link<UnrootedNode>
  */
 
 function edges(df: UnrootedNode[]) {
@@ -733,7 +790,7 @@ function edges(df: UnrootedNode[]) {
     if (parent === null || parent === undefined) continue;
     var pair = {
       source: parent,
-      target: df[row.thisId]
+      target: row
     };
     result.push(pair);
   }
@@ -741,24 +798,7 @@ function edges(df: UnrootedNode[]) {
 }
 
 function addRoot(df: UnrootedNode[], rootLeft: UnrootedNode, rootRight: UnrootedNode): UnrootedNode[] {
-  var root: UnrootedNode = {
-    parent: null,
-    parentId: null,
-    parentName: null,
-    thisId: df.length,
-    thisName: 'root',
-    children: [rootLeft, rootRight],
-    length: 0,
-    isTip: false,
-    x: 0,
-    y: 0,
-    angle: 0,
-    data: {
-      name: 'root',
-      value: 0
-    },
-    branchset: [rootLeft, rootRight]
-  };
+
 
   function swap(node: UnrootedNode) {
     let current = node;
@@ -767,13 +807,16 @@ function addRoot(df: UnrootedNode[], rootLeft: UnrootedNode, rootRight: Unrooted
     //remove current from parent's children, add parent to current's children
     while (parent) {
       parent.children = parent.children.filter(child => child !== current);
+      parent.parentId = current.thisId;
       current.children.push(parent);
-      
-      // TODO: Update forwardLinkNodes, and linkNode by creating new path elements/links and refresh tree render
 
       // move up the tree
       current = parent;
-      parent = parent.parent || null;
+      var nextparent = parent.parent || null;
+
+      // update parent's parent
+      parent.parent = current;
+      parent = nextparent;
     }
   }
 
@@ -786,10 +829,17 @@ function addRoot(df: UnrootedNode[], rootLeft: UnrootedNode, rootRight: Unrooted
     swap(rootLeft);
   }
 
-  rootLeft.parent = root;
-  rootRight.parent = root;
 
-  df.push(root);
+  rootRight.parentId = null;
+  rootRight.parent = null;
+  rootLeft.parentId = null;
+  rootLeft.parent = null;
+
+  // For every entry in df, set forwardLinkNodes to empty array
+  df.forEach(node => {
+    node.forwardLinkNodes = [];
+  });
+
   return df;
 }
 
