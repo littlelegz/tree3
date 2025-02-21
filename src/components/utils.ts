@@ -1,5 +1,4 @@
 import { TreeNode, D3Node, RadialNode, UnrootedNode } from './types.ts';
-import * as d3 from 'd3';
 
 export const convertToD3Format = (node: TreeNode | null): D3Node | null => {
   if (!node) return null;
@@ -11,6 +10,14 @@ export const convertToD3Format = (node: TreeNode | null): D3Node | null => {
       ? node.branchset.map(child => convertToD3Format(child))
         .filter((node): node is D3Node => node !== null)
       : [],
+  };
+};
+
+export const radialToD3Node = (node: RadialNode): D3Node => {
+  return {
+    name: node.data.name,
+    value: node.data.value,
+    children: node.children ? node.children.map(child => radialToD3Node(child)) : [],
   };
 };
 
@@ -97,7 +104,7 @@ export function readTree(text: string): TreeNode {
 
 export function selectAllLeaves<T extends { children?: T[] }>(node: T): T[] {
   const leaves: T[] = [];
-  
+
   function traverse(currentNode: T) {
     if (!currentNode.children || currentNode.children.length === 0) {
       leaves.push(currentNode);
@@ -112,7 +119,7 @@ export function selectAllLeaves<T extends { children?: T[] }>(node: T): T[] {
 
 export function selectAllNodes<T extends { children?: T[] }>(node: T): T[] {
   const nodes: T[] = [];
-  
+
   function traverse(currentNode: T) {
     nodes.push(currentNode);
     if (currentNode.children) {

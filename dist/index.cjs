@@ -4321,6 +4321,13 @@ var convertToD3Format = function (node) {
             : [],
     };
 };
+var radialToD3Node = function (node) {
+    return {
+        name: node.data.name,
+        value: node.data.value,
+        children: node.children ? node.children.map(function (child) { return radialToD3Node(child); }) : [],
+    };
+};
 function readTree(text) {
     // remove whitespace
     text = text.replace(/\s+$/g, '') // Remove trailing whitespace
@@ -4543,41 +4550,41 @@ function reroot(node, data) {
     var newRoot = data;
     while (queue.length > 0 && !found) {
         var current = queue.shift();
-        if (current === null || current === void 0 ? void 0 : current.branchset) {
-            for (var _i = 0, _a = current.branchset; _i < _a.length; _i++) {
+        if (current === null || current === void 0 ? void 0 : current.children) {
+            for (var _i = 0, _a = current.children; _i < _a.length; _i++) {
                 var child = _a[_i];
-                if (child.name === node.data.name) { // found node
+                if (child.data.name === node.data.name) { // found node
                     found = true;
-                    // remove node from parent's branchset
-                    var index = current.branchset.indexOf(child);
-                    current.branchset.splice(index, 1);
+                    // remove node from parent's children
+                    var index = current.children.indexOf(child);
+                    current.children.splice(index, 1);
                     newRoot = child;
                     // Start flipping process
                     var currentNode = child;
                     var parentNode = current;
                     while (parentNode) {
-                        // Remove current from parent's branchset
-                        var index_1 = parentNode.branchset.indexOf(currentNode);
-                        if (index_1 > -1) {
-                            parentNode.branchset.splice(index_1, 1);
+                        // Remove current from parent's children
+                        if (parentNode.children) {
+                            var index_1 = parentNode.children.indexOf(currentNode);
+                            if (index_1 > -1) {
+                                parentNode.children.splice(index_1, 1);
+                            }
                         }
-                        // Add parent to current's branchset
-                        currentNode.branchset.push(parentNode);
+                        // Add parent to current's children
+                        if (!currentNode.children) {
+                            currentNode.children = [];
+                        }
+                        currentNode.children.push(parentNode);
                         // Move up tree
                         currentNode = parentNode;
                         parentNode = parentNode.parent || null;
                     }
-                    var d3FormatRoot = convertToD3Format(newRoot);
-                    if (!d3FormatRoot) {
-                        throw new Error("Failed to convert new root to D3 format");
-                    }
-                    return tree$1(hierarchy(d3FormatRoot));
+                    return tree$1(hierarchy(radialToD3Node(newRoot)));
                 }
             }
-            queue.push.apply(queue, current.branchset);
+            queue.push.apply(queue, current.children);
         }
     }
-    console.log(node);
     return node;
 }
 function findAndZoom$2(name, svg, container, variable) {
@@ -4955,6 +4962,7 @@ var RectTree = React.forwardRef(function (_a, ref) {
             .attr("font-size", 10)
             .call(zoom$1);
         var svg = svgMain.append("g")
+            .attr("class", "tree")
             .attr("transform", "translate(50,0)"); // Move tree off the left edge of the screen
         // Styles TODO: Move to CSS
         svg.append("style").text("\n            .link--active {\n              stroke: #000 !important;\n              stroke-width: 2px;\n            }\n            \n            .link--important {\n              stroke: #00F !important;\n              stroke-width: 1.5px;\n            }\n            \n            .link-extension--active {\n              stroke-opacity: .6;\n            }\n            \n            .label--active {\n              font-weight: bold;\n            }\n            \n            .node--active {\n              stroke: #003366 !important;\n              fill: #0066cc !important;\n            }\n            \n            .link--highlight {\n              stroke: #FF0000 !important;\n              stroke-width: 1.5px;\n            }\n            \n            .link--hidden {\n              display: none;\n            }\n            \n            .node--collapsed {\n              r: 4px !important; \n              fill: #0066cc !important;\n            }\n            \n            .tooltip-node {\n              position: absolute;\n              background: white;\n              padding: 5px;\n              border: 1px solid #ccc;\n              border-radius: 4px;\n              font-size: 12px;\n              z-index: 10;\n            }\n        ");
@@ -5175,7 +5183,9 @@ var RectTree = React.forwardRef(function (_a, ref) {
                     React.createElement("a", { className: "dropdown-item", onClick: function () { return toggleHighlightLinkToRoot(d); } }, "Path to Root"),
                     React.createElement("div", { className: "dropdown-divider" }),
                     React.createElement("a", { className: "dropdown-item", onClick: function () {
-                            setVarData(reroot(d, readTree(data))); // NOTE, can only reroot once. Calls will always be calculated from original tree
+                            if (varData) {
+                                setVarData(reroot(d, varData)); // NOTE, can only reroot once. Calls will always be calculated from original tree
+                            }
                         } }, "Reroot Here"),
                     React.createElement("div", { className: "dropdown-divider" }), customNodeMenuItems === null || customNodeMenuItems === void 0 ? void 0 :
                     customNodeMenuItems.map(function (item) {
@@ -5387,7 +5397,8 @@ var RadialTree = React.forwardRef(function (_a, ref) {
             .attr("font-family", "sans-serif")
             .attr("font-size", 5)
             .call(zoom$1);
-        var svg = svgMain.append("g").attr("class", "tree");
+        var svg = svgMain.append("g")
+            .attr("class", "tree");
         // Styles TODO: Move to CSS
         svg.append("style").text("\n      .link--active {\n        stroke: #000 !important;\n        stroke-width: 2px;\n      }\n\n      .link--important {\n        stroke: #00F !important;\n        stroke-width: 1.5px;\n      }\n\n      .link-extension--active {\n        stroke-opacity: .6;\n      }\n\n      .label--active {\n        font-weight: bold;\n      }\n\n      .node--active {\n        stroke: #003366 !important;\n        fill: #0066cc !important;\n      }\n\n      .link--highlight {\n        stroke: #FF0000 !important;\n        stroke-width: 1.5px;\n      }\n\n      .link--hidden {\n        display: none;\n      }\n\n      .node--collapsed {\n        r: 4px !important; \n        fill: #0066cc !important;\n      }\n\n      .tooltip-node {\n        position: absolute;\n        background: white;\n        padding: 5px;\n        border: 1px solid #ccc;\n        border-radius: 4px;\n        font-size: 12px;\n        z-index: 10;\n      }\n    ");
         var cluster$1 = cluster()
@@ -5605,7 +5616,9 @@ var RadialTree = React.forwardRef(function (_a, ref) {
                     React.createElement("a", { className: "dropdown-item", onClick: function () { return toggleHighlightLinkToRoot(d); } }, "Path to Root"),
                     React.createElement("div", { className: "dropdown-divider" }),
                     React.createElement("a", { className: "dropdown-item", onClick: function () {
-                            setVarData(reroot(d, readTree(data))); // NOTE, can only reroot once. Calls will always be calculated from original tree
+                            if (varData) {
+                                setVarData(reroot(d, varData)); // NOTE, can only reroot once. Calls will always be calculated from original tree
+                            }
                         } }, "Reroot Here"),
                     React.createElement("div", { className: "dropdown-divider" }), customNodeMenuItems === null || customNodeMenuItems === void 0 ? void 0 :
                     customNodeMenuItems.map(function (item) {
@@ -5989,6 +6002,19 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
     var svgRef = React.useRef(null);
     var _e = React.useState(0), refreshTrigger = _e[0], setRefreshTrigger = _e[1];
     var _f = React.useState(null), varData = _f[0], setVarData = _f[1];
+    // Read tree and calculate layout
+    React.useEffect(function () {
+        if (!data)
+            return;
+        var tree = {
+            data: [],
+            edges: []
+        };
+        var eq = fortify(equalAngleLayout(readTree(data)));
+        tree.data = eq;
+        tree.edges = edges(eq);
+        setVarData(tree);
+    }, [data, refreshTrigger]);
     // Main helper methods
     var getBoundingBox = function (data) {
         var nodes = data.data;
@@ -6055,21 +6081,12 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
         return "rotate(".concat(angle, ", ").concat(d.x * scale, ", ").concat(d.y * scale, ")");
     };
     React.useEffect(function () {
-        if (!containerRef.current || !data)
+        if (!containerRef.current || !varData)
             return;
-        var tree = {
-            data: [], // UnrootedNode[]
-            edges: [] // Link<UnrootedNode>[]
-        };
-        // Calculating links and nodes for unrooted tree
-        var eq = fortify(equalAngleLayout(readTree(data)));
-        tree.data = eq;
-        tree.edges = edges(eq);
-        setVarData(tree);
         // Clear existing content
         select(containerRef.current).selectAll("*").remove();
         // Initialize SVG Main container, used for zoom/pan listening
-        var bbox = getBoundingBox(tree);
+        var bbox = getBoundingBox(varData);
         var initialScale = 0.5;
         var translateX = (containerRef.current.clientWidth - bbox.width * initialScale) / 2 - bbox.x * initialScale;
         var translateY = (containerRef.current.clientHeight - bbox.height * initialScale) / 2 - bbox.y * initialScale;
@@ -6085,14 +6102,14 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
         //.attr("transform", `translate(${translateX}, ${translateY})`);
         // Create zoom behavior
         var zoom$1 = zoom()
-            .scaleExtent([0.5, 8])
+            .scaleExtent([0.2, 8])
             .on('zoom', function (event) {
             svg.attr('transform', event.transform);
         });
         // Apply zoom behavior
         svgMain.call(zoom$1);
         // Append styles
-        svg.append("style").text("\n      .link--active {\n        stroke: #000 !important;\n        stroke-width: 2px;\n      }\n\n      .link--important {\n        stroke: #00F !important;\n        stroke-width: 1.5px;\n      }\n\n      .link-extension--active {\n        stroke-opacity: .6;\n      }\n\n      .label--active {\n        font-weight: bold;\n      }\n\n      .node--active {\n        stroke: #003366 !important;\n        fill: #0066cc !important;\n      }\n\n      .link--highlight {\n        stroke: #FF0000 !important;\n        stroke-width: 1.5px;\n      }\n\n      .link--hidden {\n        display: none;\n      }\n\n      .node--collapsed {\n        r: 4px !important; \n        fill: #0066cc !important;\n      }\n\n      .tooltip-node {\n        position: absolute;\n        background: white;\n        padding: 5px;\n        border: 1px solid #ccc;\n        border-radius: 4px;\n        font-size: 12px;\n        z-index: 10;\n      }\n    ");
+        svg.append("style").text("\n      .link--active {\n        stroke: #000 !important;\n        stroke-width: 2px;\n      }\n\n      .link--important {\n        stroke: #00F !important;\n        stroke-width: 1.5px;\n      }\n\n      .link-extension--active {\n        stroke-opacity: .6;\n      }\n\n      .label--active {\n        font-weight: bold;\n      }\n\n      .node--active {\n        stroke: #003366 !important;\n        fill: #0066cc !important;\n      }\n\n      .link--highlight {\n        stroke: #FF0000 !important;\n        stroke-width: 1.5px;\n      }\n\n      .link--root {\n        stroke: #0000FF;\n        stroke-width: 3px;\n      }\n\n      .link--hidden {\n        display: none;\n      }\n\n      .node--collapsed {\n        r: 4px !important; \n        fill: #0066cc !important;\n      }\n\n      .tooltip-node {\n        position: absolute;\n        background: white;\n        padding: 5px;\n        border: 1px solid #ccc;\n        border-radius: 4px;\n        font-size: 12px;\n        z-index: 10;\n      }\n    ");
         // Link functions
         function linkhovered(active) {
             return function (event, d) {
@@ -6159,7 +6176,7 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
             onLinkClick === null || onLinkClick === void 0 ? void 0 : onLinkClick(event, d.source, d.target);
         }
         if (linkRoot) { // Root (Node1) does not have links connecting to or from it
-            var root_1 = tree.data[tree.data.length - 1]; // Root is always the last one to be read
+            var root_1 = varData.data[varData.data.length - 1]; // Root is always the last one to be read
             // find the first nontip child node
             var firstChild = root_1.children.find(function (child) { return !child.isTip; });
             var tips = root_1.children.filter(function (child) { return child.isTip; });
@@ -6169,7 +6186,7 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
                     source: root_1,
                     target: firstChild
                 };
-                tree.edges.push(link);
+                varData.edges.push(link);
             }
             if (tips) {
                 tips.forEach(function (tip) {
@@ -6177,17 +6194,22 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
                         source: root_1,
                         target: tip
                     };
-                    tree.edges.push(link);
+                    varData.edges.push(link);
                 });
             }
         }
         // Draw links first, then calculate and draw extension
+        var linksData = varData.edges;
+        // Add root node if present
+        if (varData.root) {
+            linksData = linksData.concat(varData.root.edges);
+        }
         var links = svg.append("g")
             .attr("class", "links")
             .attr("fill", "none")
             .attr("stroke", "#444")
             .selectAll("path")
-            .data(tree.edges)
+            .data(linksData)
             .join("path")
             .each(function (d) {
             d.target.linkNode = this;
@@ -6269,7 +6291,7 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
         var leafLabels = svg.append("g")
             .attr("class", "leaves")
             .selectAll(".leaf-label")
-            .data(tree.data.filter(function (d) { return d.isTip; }))
+            .data(varData.data.filter(function (d) { return d.isTip; }))
             .join("text")
             .each(function (d) { d.labelElement = this; })
             .attr("class", "leaf-label")
@@ -6385,10 +6407,15 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
             onNodeClick === null || onNodeClick === void 0 ? void 0 : onNodeClick(event, d);
         }
         // Draw nodes
+        var nodesData = varData.data.filter(function (d) { return !d.isTip; });
+        // Add root node if present
+        if (varData.root) {
+            nodesData.push(varData.root.node);
+        }
         var nodes = svg.append("g")
             .attr("class", "nodes")
             .selectAll(".node")
-            .data(tree.data.filter(function (d) { return !d.isTip; })) // Don't draw leaf nodes, and skip root
+            .data(nodesData)
             .join("g")
             .each(function (d) { d.nodeElement = this; })
             .attr("class", "inner-node")
@@ -6416,7 +6443,7 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
             .attr("stroke-opacity", 0.25)
             .attr("stroke-dasharray", "4,4")
             .selectAll("path")
-            .data(tree.edges.filter(function (d) { return d.target.children.length === 0; })) // targets nodes without children
+            .data(varData.edges.filter(function (d) { return d.target.children.length === 0; })) // targets nodes without children
             .join("path")
             .each(function (d) { d.target.linkExtensionNode = this; })
             .attr("d", linkExtension);
@@ -6434,7 +6461,7 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
                 svgMain.call(zoom$1.transform, initialTransform);
             }
         }
-    }, [data, refreshTrigger]);
+    }, [varData]);
     React.useEffect(function () {
         var _a, _b;
         (_a = leafLabelsRef.current) === null || _a === void 0 ? void 0 : _a.style("display", displayLeaves ? "block" : "none");
@@ -6448,9 +6475,43 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
     };
     var rootOnBranch = React.useMemo(function () { return function (d) {
         var _a;
-        // TODO
-        console.log("Root on branch", d);
-        addRoot((_a = varData === null || varData === void 0 ? void 0 : varData.data) !== null && _a !== void 0 ? _a : [], d.source, d.target);
+        var rootNode = {
+            parent: null,
+            parentId: null,
+            parentName: null,
+            thisName: 'root',
+            thisId: -1,
+            children: [d.source, d.target],
+            length: 0,
+            isTip: false,
+            x: (d.source.x + d.target.x) / 2,
+            y: (d.source.y + d.target.y) / 2,
+            angle: 0,
+            data: {
+                name: 'root',
+                value: 0
+            },
+            branchset: [d.source, d.target]
+        };
+        var rootEdges = [{
+                source: rootNode,
+                target: d.source
+            }, {
+                source: rootNode,
+                target: d.target
+            }];
+        var newData = addRoot((_a = varData === null || varData === void 0 ? void 0 : varData.data) !== null && _a !== void 0 ? _a : [], d.source, d.target);
+        var newEdges = edges(newData);
+        if (varData) {
+            setVarData({
+                data: newData,
+                edges: newEdges,
+                root: {
+                    node: rootNode,
+                    edges: rootEdges
+                }
+            });
+        }
     }; }, [varData]);
     React.useImperativeHandle(ref, function () { return ({
         getLinkExtensions: function () { return linkExtensionRef.current; },
@@ -6486,7 +6547,7 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
  * are the $edge slot. I think.
  * - Removed rectangular layout related code
  * - Simplified return data structure to just the source and target
- * - Input is now object of type UnrootedData, calculated edges are
+ * - Input is now object of type UnrootedData, calculated edges are Link<UnrootedNode>
  */
 function edges(df) {
     var result = [], parent;
@@ -6504,41 +6565,27 @@ function edges(df) {
             continue;
         var pair = {
             source: parent,
-            target: df[row.thisId]
+            target: row
         };
         result.push(pair);
     }
     return result;
 }
 function addRoot(df, rootLeft, rootRight) {
-    var root = {
-        parent: null,
-        parentId: null,
-        parentName: null,
-        thisId: df.length,
-        thisName: 'root',
-        children: [rootLeft, rootRight],
-        length: 0,
-        isTip: false,
-        x: 0,
-        y: 0,
-        angle: 0,
-        data: {
-            name: 'root',
-            value: 0
-        },
-        branchset: [rootLeft, rootRight]
-    };
     function swap(node) {
         var current = node;
         var parent = node.parent;
         //remove current from parent's children, add parent to current's children
         while (parent) {
             parent.children = parent.children.filter(function (child) { return child !== current; });
+            parent.parentId = current.thisId;
             current.children.push(parent);
             // move up the tree
             current = parent;
-            parent = parent.parent || null;
+            var nextparent = parent.parent || null;
+            // update parent's parent
+            parent.parent = current;
+            parent = nextparent;
         }
     }
     if (rootLeft.parentName === rootRight.thisName) { // rootRight child-parent relationships are reversed
@@ -6550,9 +6597,14 @@ function addRoot(df, rootLeft, rootRight) {
         rootLeft.children = rootLeft.children.filter(function (child) { return child !== rootRight; });
         swap(rootLeft);
     }
-    rootLeft.parent = root;
-    rootRight.parent = root;
-    df.push(root);
+    rootRight.parentId = null;
+    rootRight.parent = null;
+    rootLeft.parentId = null;
+    rootLeft.parent = null;
+    // For every entry in df, set forwardLinkNodes to empty array
+    df.forEach(function (node) {
+        node.forwardLinkNodes = [];
+    });
     return df;
 }
 /**

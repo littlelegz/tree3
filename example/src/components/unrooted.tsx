@@ -348,12 +348,19 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     }
 
     // Draw links first, then calculate and draw extension
+    var linksData = varData.edges;
+
+    // Add root node if present
+    if (varData.root) {
+      linksData = linksData.concat(varData.root.edges);
+    }
+
     const links = svg.append("g")
       .attr("class", "links")
       .attr("fill", "none")
       .attr("stroke", "#444")
       .selectAll("path")
-      .data(varData.edges)
+      .data(linksData)
       .join("path")
       .each(function (d: Link<UnrootedNode>) {
         d.target.linkNode = this as SVGPathElement;
@@ -595,10 +602,17 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     }
 
     // Draw nodes
+    const nodesData = varData.data.filter(d => !d.isTip);
+
+    // Add root node if present
+    if (varData.root) {
+      nodesData.push(varData.root.node);
+    }
+
     const nodes = svg.append("g")
       .attr("class", "nodes")
       .selectAll(".node")
-      .data(varData.data.filter(d => !d.isTip)) // Don't draw leaf nodes, and skip root
+      .data(nodesData)
       .join("g")
       .each(function (d: UnrootedNode) { d.nodeElement = this as SVGGElement; })
       .attr("class", "inner-node")
@@ -633,27 +647,6 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
       .join("path")
       .each(function (d: Link<UnrootedNode>) { d.target.linkExtensionNode = this as SVGPathElement; })
       .attr("d", linkExtension);
-
-    if (varData.root) {
-      const rootLinks = svg.append("g")
-        .attr("class", "root-links")
-        .attr("fill", "none")
-        .attr("stroke", "#000")
-        .attr("stroke-width", 3)
-        .selectAll("path")
-        .data(varData.root.edges)
-        .join("path")
-        .attr("d", linkPath);
-      
-      const rootNode = svg.append("g")
-        .attr("class", "root-node")
-        .attr("transform", d => `translate(${varData.root.node.x * scale}, ${varData.root.node.y * scale})`)
-        .append("circle")
-        .attr("r", 5)
-        .style("fill", "#fff")
-        .style("stroke", "steelblue")
-        .style("stroke-width", 1.5);
-    }
 
     linkExtensionRef.current = linkExtensions as unknown as d3.Selection<SVGPathElement, Link<UnrootedNode>, SVGGElement, unknown>;
     linkRef.current = links as unknown as d3.Selection<SVGPathElement, Link<UnrootedNode>, SVGGElement, unknown>;

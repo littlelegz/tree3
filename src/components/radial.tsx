@@ -155,7 +155,8 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       .attr("font-size", 5)
       .call(zoom);
 
-    const svg = svgMain.append("g").attr("class", "tree");
+    const svg = svgMain.append("g")
+      .attr("class", "tree");
 
     // Styles TODO: Move to CSS
     svg.append("style").text(`
@@ -450,9 +451,7 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
 
       const MenuContent = (
         <>
-          <div className="menu-header">{d.data.name}
-
-          </div>
+          <div className="menu-header">{d.data.name}</div>
           <div className="menu-buttons">
             <a className="dropdown-item" onClick={() => toggleCollapseClade(d)}>
               Collapse Clade
@@ -470,7 +469,9 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
             </a>
             <div className="dropdown-divider" />
             <a className="dropdown-item" onClick={() => {
-              setVarData(reroot(d, readTree(data))); // NOTE, can only reroot once. Calls will always be calculated from original tree
+              if (varData) {
+                setVarData(reroot(d, varData)); // NOTE, can only reroot once. Calls will always be calculated from original tree
+              }
             }}>
               Reroot Here
             </a>
