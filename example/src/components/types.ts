@@ -39,6 +39,11 @@ export interface RadialTreeProps {
     onClick: (node: RadialNode) => void;
     toShow: (node: RadialNode) => boolean;
   }];
+  customLinkMenuItems?: [{
+    label: (source: RadialNode, target: RadialNode) => string;
+    onClick: (source: RadialNode, target: RadialNode) => void;
+    toShow: (source: RadialNode, target: RadialNode) => boolean;
+  }];
   nodeStyler?: (node: RadialNode) => void;
   linkStyler?: (source: RadialNode, target: RadialNode) => void;
   leafStyler?: (node: RadialNode) => void;

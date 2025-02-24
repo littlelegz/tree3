@@ -45,6 +45,7 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
   onLinkMouseOut,
   customNodeMenuItems,
   customLeafMenuItems,
+  customLinkMenuItems,
   nodeStyler,
   linkStyler,
   leafStyler,
@@ -52,7 +53,7 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
 }, ref) => {
   const [variableLinks, setVariableLinks] = useState(false);
   const [displayLeaves, setDisplayLeaves] = useState(true);
-  const [tipAlign, setTipAlign] = useState(true);
+  const [tipAlign, setTipAlign] = useState(false);
   const linkExtensionRef = useRef<d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown>>(null);
   const linkRef = useRef<d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown>>(null);
   const nodesRef = useRef<d3.Selection<SVGGElement, RadialNode, SVGGElement, unknown>>(null);
@@ -158,56 +159,6 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     const svg = svgMain.append("g")
       .attr("class", "tree");
 
-    // Styles TODO: Move to CSS
-    svg.append("style").text(`
-      .link--active {
-        stroke: #000 !important;
-        stroke-width: 2px;
-      }
-
-      .link--important {
-        stroke: #00F !important;
-        stroke-width: 1.5px;
-      }
-
-      .link-extension--active {
-        stroke-opacity: .6;
-      }
-
-      .label--active {
-        font-weight: bold;
-      }
-
-      .node--active {
-        stroke: #003366 !important;
-        fill: #0066cc !important;
-      }
-
-      .link--highlight {
-        stroke: #FF0000 !important;
-        stroke-width: 1.5px;
-      }
-
-      .link--hidden {
-        display: none;
-      }
-
-      .node--collapsed {
-        r: 4px !important; 
-        fill: #0066cc !important;
-      }
-
-      .tooltip-node {
-        position: absolute;
-        background: white;
-        padding: 5px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        font-size: 12px;
-        z-index: 10;
-      }
-    `);
-
     const cluster = d3.cluster<D3Node>()
       .size([355, innerRadius]) // [angle to spread nodes, radius]
       //.nodeSize([.7, 15]) // specifies the size of a leaf node, play around to ensure no label overlap at higher leaf counts
@@ -233,16 +184,6 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       };
     }
 
-    function linkClicked(event: MouseEvent, d: Link<RadialNode>): void {
-      const linkElement = d3.select(event.target as SVGPathElement);
-      const isHighlighted = linkElement.classed('link--highlight');
-
-      linkElement
-        .classed('link--highlight', !isHighlighted)
-        .raise();
-      onLinkClick?.(event, d.source, d.target);
-    }
-
     // Draw links
     const linkExtensions = svg.append("g")
       .attr("class", "link-extensions")
@@ -255,6 +196,64 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       .join("path")
       .each(function (d: Link<RadialNode>) { d.target.linkExtensionNode = this as SVGPathElement; })
       .attr("d", linkExtensionConstant);
+
+    function linkClicked(event: MouseEvent, d: Link<RadialNode>): void {
+      d3.selectAll('.tooltip-node').remove();
+
+      const menu = d3.select(containerRef.current)
+        .append('div')
+        .attr('class', 'menu-node')
+        .style('position', 'fixed')
+        .style('left', `${event.clientX + 10}px`)
+        .style('top', `${event.clientY - 10}px`)
+        .style('opacity', 1)
+        .node();
+
+      const MenuContent = (
+        <>
+          <div className="menu-header">{d.source.data.name}-{d.target.data.name}</div>
+          <div className="menu-buttons">
+            <div className="dropdown-divider" />
+            {/* Custom menu items */}
+            {customLinkMenuItems?.map(item => {
+              if (item.toShow(d.source, d.target)) {
+                return (
+                  <a className="dropdown-item" onClick={() => { item.onClick(d.source, d.target); menu?.remove(); }}>
+                    {item.label(d.source, d.target)}
+                  </a>
+                );
+              }
+            })}
+          </div>
+        </>
+      );
+
+      if (menu) {
+        const root = createRoot(menu);
+        root.render(MenuContent);
+
+        setTimeout(() => {
+          const handleClickOutside = (e: MouseEvent) => {
+            if (menu && !menu.contains(e.target as Node)) {
+              try {
+                menu.remove();
+              } catch (e) { // When rerooting, tree display is refreshed and menu is removed
+                console.error(e);
+              }
+              window.removeEventListener('click', handleClickOutside);
+            }
+          };
+          window.addEventListener('click', handleClickOutside);
+        }, 5);
+      }
+      const linkElement = d3.select(event.target as SVGPathElement);
+      const isHighlighted = linkElement.classed('link--highlight');
+
+      linkElement
+        .classed('link--highlight', !isHighlighted)
+        .raise();
+      onLinkClick?.(event, d.source, d.target);
+    }
 
     const links = svg.append("g")
       .attr("class", "links")

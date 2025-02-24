@@ -187,62 +187,6 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     // Apply zoom behavior
     svgMain.call(zoom);
 
-
-    // Append styles
-    svg.append("style").text(`
-      .link--active {
-        stroke: #000 !important;
-        stroke-width: 2px;
-      }
-
-      .link--important {
-        stroke: #00F !important;
-        stroke-width: 1.5px;
-      }
-
-      .link-extension--active {
-        stroke-opacity: .6;
-      }
-
-      .label--active {
-        font-weight: bold;
-      }
-
-      .node--active {
-        stroke: #003366 !important;
-        fill: #0066cc !important;
-      }
-
-      .link--highlight {
-        stroke: #FF0000 !important;
-        stroke-width: 1.5px;
-      }
-
-      .link--root {
-        stroke: #0000FF;
-        stroke-width: 3px;
-      }
-
-      .link--hidden {
-        display: none;
-      }
-
-      .node--collapsed {
-        r: 4px !important; 
-        fill: #0066cc !important;
-      }
-
-      .tooltip-node {
-        position: absolute;
-        background: white;
-        padding: 5px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        font-size: 12px;
-        z-index: 10;
-      }
-    `);
-
     // Link functions
     function linkhovered(active: boolean): (event: MouseEvent, d: Link<UnrootedNode>) => void {
       return function (this: SVGPathElement, event: MouseEvent, d: Link<UnrootedNode>): void {
@@ -415,8 +359,8 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
 
       const MenuContent = (
         <>
-          <div className="menu-header">{d.data.name}
-
+          <div className="menu-header">
+            {d.data.name}
           </div>
           <div className="menu-buttons">
             <div className="dropdown-divider" />

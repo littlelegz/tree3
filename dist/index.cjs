@@ -4872,14 +4872,14 @@ function styleInject(css, ref) {
   }
 }
 
-var css_248z$1 = ".menu-node {\r\n  background: white;\r\n  border: 1px solid #ccc;\r\n  border-radius: 4px;\r\n  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\r\n  text-align: left;\r\n}\r\n\r\n.menu-buttons {\r\n  display: flex;\r\n  flex-direction: column;\r\n}\r\n\r\n.menu-btn {\r\n  padding: 4px 8px;\r\n  border: 1px solid #ddd;\r\n  border-radius: 3px;\r\n  background: #f5f5f5;\r\n  cursor: pointer;\r\n}\r\n\r\n.menu-btn:hover {\r\n  background: #e0e0e0;\r\n}";
+var css_248z$1 = ".menu-node {\r\n  background: white;\r\n  border: 1px solid #ccc;\r\n  border-radius: 4px;\r\n  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\r\n  text-align: left;\r\n}\r\n\r\n.menu-buttons {\r\n  display: flex;\r\n  flex-direction: column;\r\n}\r\n\r\n.menu-btn {\r\n  padding: 4px 8px;\r\n  border: 1px solid #ddd;\r\n  border-radius: 3px;\r\n  background: #f5f5f5;\r\n  cursor: pointer;\r\n}\r\n\r\n.menu-btn:hover {\r\n  background: #e0e0e0;\r\n}\r\n\r\n.link--active {\r\n  stroke: #000 !important;\r\n  stroke-width: 2px;\r\n}\r\n\r\n.link--important {\r\n  stroke: #00F !important;\r\n  stroke-width: 1.5px;\r\n}\r\n\r\n.link-extension--active {\r\n  stroke-opacity: .6;\r\n}\r\n\r\n.label--active {\r\n  font-weight: bold;\r\n}\r\n\r\n.node--active {\r\n  stroke: #003366 !important;\r\n  fill: #0066cc !important;\r\n}\r\n\r\n.link--highlight {\r\n  stroke: #FF0000 !important;\r\n  stroke-width: 1.5px;\r\n}\r\n\r\n.link--hidden {\r\n  display: none;\r\n}\r\n\r\n.node--collapsed {\r\n  r: 4px !important;\r\n  fill: #0066cc !important;\r\n}\r\n\r\n.tooltip-node {\r\n  position: absolute;\r\n  background: white;\r\n  padding: 5px;\r\n  border: 1px solid #ccc;\r\n  border-radius: 4px;\r\n  font-size: 12px;\r\n  z-index: 10;\r\n}";
 styleInject(css_248z$1);
 
 var css_248z = ".dropdown-menu {\r\n  position: absolute;\r\n  top: 100%;\r\n  left: 0;\r\n  z-index: 1000;\r\n  display: none;\r\n  float: left;\r\n  min-width: 10rem;\r\n  padding: 0.5rem 0;\r\n  margin: 0.125rem 0 0;\r\n  font-size: 1rem;\r\n  color: #777;\r\n  text-align: left;\r\n  list-style: none;\r\n  background-color: #fff;\r\n  background-clip: padding-box;\r\n  border: 1px solid rgba(0, 0, 0, 0.15);\r\n  border-radius: 0.25rem;\r\n}\r\n\r\n.dropdown-item {\r\n  display: block;\r\n  padding: 0.25rem 1rem;\r\n  clear: both;\r\n  font-weight: 400;\r\n  color: #2d2d2d;\r\n  text-align: inherit;\r\n  white-space: nowrap;\r\n  background-color: transparent;\r\n  border: 0;\r\n  -webkit-tap-highlight-color: transparent;\r\n}\r\n\r\n.dropdown-item:hover {\r\n  color: #fff;\r\n  background-color: #007bff;\r\n  text-decoration: none;\r\n}\r\n\r\n.dropdown-divider {\r\n  height: 0;\r\n  margin: 0.25rem 0;\r\n  overflow: hidden;\r\n  border-top: 1px solid #eee;\r\n}\r\n\r\n.dropdown-header {\r\n  display: block;\r\n  padding: 0.25rem .5rem;\r\n  margin-bottom: 0;\r\n  font-size: 0.875rem;\r\n  color: #777;\r\n  white-space: nowrap;\r\n  margin-top: 0;\r\n  font-weight: 400;\r\n}\r\n\r\n.menu-header {\r\n  font-weight: bold;\r\n  padding: 0rem .5rem;\r\n}";
 styleInject(css_248z);
 
 var RectTree = React.forwardRef(function (_a, ref) {
-    var data = _a.data, _b = _a.width, width = _b === void 0 ? 1000 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler, homeNode = _a.homeNode;
+    var data = _a.data, _b = _a.width, width = _b === void 0 ? 1000 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, customLinkMenuItems = _a.customLinkMenuItems, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler, homeNode = _a.homeNode;
     var _c = React.useState(false), variableLinks = _c[0], setVariableLinks = _c[1];
     var _d = React.useState(true), displayLeaves = _d[0], setDisplayLeaves = _d[1];
     var _e = React.useState(false), tipAlign = _e[0], setTipAlign = _e[1];
@@ -4964,8 +4964,6 @@ var RectTree = React.forwardRef(function (_a, ref) {
         var svg = svgMain.append("g")
             .attr("class", "tree")
             .attr("transform", "translate(50,0)"); // Move tree off the left edge of the screen
-        // Styles TODO: Move to CSS
-        svg.append("style").text("\n            .link--active {\n              stroke: #000 !important;\n              stroke-width: 2px;\n            }\n            \n            .link--important {\n              stroke: #00F !important;\n              stroke-width: 1.5px;\n            }\n            \n            .link-extension--active {\n              stroke-opacity: .6;\n            }\n            \n            .label--active {\n              font-weight: bold;\n            }\n            \n            .node--active {\n              stroke: #003366 !important;\n              fill: #0066cc !important;\n            }\n            \n            .link--highlight {\n              stroke: #FF0000 !important;\n              stroke-width: 1.5px;\n            }\n            \n            .link--hidden {\n              display: none;\n            }\n            \n            .node--collapsed {\n              r: 4px !important; \n              fill: #0066cc !important;\n            }\n            \n            .tooltip-node {\n              position: absolute;\n              background: white;\n              padding: 5px;\n              border: 1px solid #ccc;\n              border-radius: 4px;\n              font-size: 12px;\n              z-index: 10;\n            }\n        ");
         var cluster$1 = cluster()
             .nodeSize([10, 20])
             .separation(function (a, b) { return 2; }); // Equal separation between nodes
@@ -4991,6 +4989,45 @@ var RectTree = React.forwardRef(function (_a, ref) {
             };
         }
         function linkClicked(event, d) {
+            selectAll('.tooltip-node').remove();
+            var menu = select(containerRef.current)
+                .append('div')
+                .attr('class', 'menu-node')
+                .style('position', 'fixed')
+                .style('left', "".concat(event.clientX + 10, "px"))
+                .style('top', "".concat(event.clientY - 10, "px"))
+                .style('opacity', 1)
+                .node();
+            var MenuContent = (React.createElement(React.Fragment, null,
+                React.createElement("div", { className: "menu-header" },
+                    d.source.data.name,
+                    "-",
+                    d.target.data.name),
+                React.createElement("div", { className: "menu-buttons" },
+                    React.createElement("div", { className: "dropdown-divider" }), customLinkMenuItems === null || customLinkMenuItems === void 0 ? void 0 :
+                    customLinkMenuItems.map(function (item) {
+                        if (item.toShow(d.source, d.target)) {
+                            return (React.createElement("a", { className: "dropdown-item", onClick: function () { item.onClick(d.source, d.target); menu === null || menu === void 0 ? void 0 : menu.remove(); } }, item.label(d.source, d.target)));
+                        }
+                    }))));
+            if (menu) {
+                var root = client.createRoot(menu);
+                root.render(MenuContent);
+                setTimeout(function () {
+                    var handleClickOutside = function (e) {
+                        if (menu && !menu.contains(e.target)) {
+                            try {
+                                menu.remove();
+                            }
+                            catch (e) { // When rerooting, tree display is refreshed and menu is removed
+                                console.error(e);
+                            }
+                            window.removeEventListener('click', handleClickOutside);
+                        }
+                    };
+                    window.addEventListener('click', handleClickOutside);
+                }, 5);
+            }
             var linkElement = select(event.target);
             var isHighlighted = linkElement.classed('link--highlight');
             linkElement
@@ -5309,10 +5346,10 @@ var RectTree = React.forwardRef(function (_a, ref) {
 });
 
 var RadialTree = React.forwardRef(function (_a, ref) {
-    var data = _a.data, _b = _a.width, width = _b === void 0 ? 1000 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler, homeNode = _a.homeNode;
+    var data = _a.data, _b = _a.width, width = _b === void 0 ? 1000 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, customLinkMenuItems = _a.customLinkMenuItems, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler, homeNode = _a.homeNode;
     var _c = React.useState(false), variableLinks = _c[0], setVariableLinks = _c[1];
     var _d = React.useState(true), displayLeaves = _d[0], setDisplayLeaves = _d[1];
-    var _e = React.useState(true), tipAlign = _e[0], setTipAlign = _e[1];
+    var _e = React.useState(false), tipAlign = _e[0], setTipAlign = _e[1];
     var linkExtensionRef = React.useRef(null);
     var linkRef = React.useRef(null);
     var nodesRef = React.useRef(null);
@@ -5399,8 +5436,6 @@ var RadialTree = React.forwardRef(function (_a, ref) {
             .call(zoom$1);
         var svg = svgMain.append("g")
             .attr("class", "tree");
-        // Styles TODO: Move to CSS
-        svg.append("style").text("\n      .link--active {\n        stroke: #000 !important;\n        stroke-width: 2px;\n      }\n\n      .link--important {\n        stroke: #00F !important;\n        stroke-width: 1.5px;\n      }\n\n      .link-extension--active {\n        stroke-opacity: .6;\n      }\n\n      .label--active {\n        font-weight: bold;\n      }\n\n      .node--active {\n        stroke: #003366 !important;\n        fill: #0066cc !important;\n      }\n\n      .link--highlight {\n        stroke: #FF0000 !important;\n        stroke-width: 1.5px;\n      }\n\n      .link--hidden {\n        display: none;\n      }\n\n      .node--collapsed {\n        r: 4px !important; \n        fill: #0066cc !important;\n      }\n\n      .tooltip-node {\n        position: absolute;\n        background: white;\n        padding: 5px;\n        border: 1px solid #ccc;\n        border-radius: 4px;\n        font-size: 12px;\n        z-index: 10;\n      }\n    ");
         var cluster$1 = cluster()
             .size([355, innerRadius]) // [angle to spread nodes, radius]
             //.nodeSize([.7, 15]) // specifies the size of a leaf node, play around to ensure no label overlap at higher leaf counts
@@ -5423,14 +5458,6 @@ var RadialTree = React.forwardRef(function (_a, ref) {
                 highlightDescendantsRadial(d.target, active, variableLinksRef.current, svg, innerRadius);
             };
         }
-        function linkClicked(event, d) {
-            var linkElement = select(event.target);
-            var isHighlighted = linkElement.classed('link--highlight');
-            linkElement
-                .classed('link--highlight', !isHighlighted)
-                .raise();
-            onLinkClick === null || onLinkClick === void 0 ? void 0 : onLinkClick(event, d.source, d.target);
-        }
         // Draw links
         var linkExtensions = svg.append("g")
             .attr("class", "link-extensions")
@@ -5443,6 +5470,53 @@ var RadialTree = React.forwardRef(function (_a, ref) {
             .join("path")
             .each(function (d) { d.target.linkExtensionNode = this; })
             .attr("d", linkExtensionConstant);
+        function linkClicked(event, d) {
+            selectAll('.tooltip-node').remove();
+            var menu = select(containerRef.current)
+                .append('div')
+                .attr('class', 'menu-node')
+                .style('position', 'fixed')
+                .style('left', "".concat(event.clientX + 10, "px"))
+                .style('top', "".concat(event.clientY - 10, "px"))
+                .style('opacity', 1)
+                .node();
+            var MenuContent = (React.createElement(React.Fragment, null,
+                React.createElement("div", { className: "menu-header" },
+                    d.source.data.name,
+                    "-",
+                    d.target.data.name),
+                React.createElement("div", { className: "menu-buttons" },
+                    React.createElement("div", { className: "dropdown-divider" }), customLinkMenuItems === null || customLinkMenuItems === void 0 ? void 0 :
+                    customLinkMenuItems.map(function (item) {
+                        if (item.toShow(d.source, d.target)) {
+                            return (React.createElement("a", { className: "dropdown-item", onClick: function () { item.onClick(d.source, d.target); menu === null || menu === void 0 ? void 0 : menu.remove(); } }, item.label(d.source, d.target)));
+                        }
+                    }))));
+            if (menu) {
+                var root = client.createRoot(menu);
+                root.render(MenuContent);
+                setTimeout(function () {
+                    var handleClickOutside = function (e) {
+                        if (menu && !menu.contains(e.target)) {
+                            try {
+                                menu.remove();
+                            }
+                            catch (e) { // When rerooting, tree display is refreshed and menu is removed
+                                console.error(e);
+                            }
+                            window.removeEventListener('click', handleClickOutside);
+                        }
+                    };
+                    window.addEventListener('click', handleClickOutside);
+                }, 5);
+            }
+            var linkElement = select(event.target);
+            var isHighlighted = linkElement.classed('link--highlight');
+            linkElement
+                .classed('link--highlight', !isHighlighted)
+                .raise();
+            onLinkClick === null || onLinkClick === void 0 ? void 0 : onLinkClick(event, d.source, d.target);
+        }
         var links = svg.append("g")
             .attr("class", "links")
             .attr("fill", "none")
@@ -5780,6 +5854,7 @@ var countLeaves = function (node) {
     }
     return node.children.reduce(function (sum, child) { return sum + countLeaves(child); }, 0);
 };
+// TODO, debug function after rerooting on branch
 function highlightClade(node, active, svg, scale) {
     if (node.isTip)
         return;
@@ -6108,8 +6183,6 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
         });
         // Apply zoom behavior
         svgMain.call(zoom$1);
-        // Append styles
-        svg.append("style").text("\n      .link--active {\n        stroke: #000 !important;\n        stroke-width: 2px;\n      }\n\n      .link--important {\n        stroke: #00F !important;\n        stroke-width: 1.5px;\n      }\n\n      .link-extension--active {\n        stroke-opacity: .6;\n      }\n\n      .label--active {\n        font-weight: bold;\n      }\n\n      .node--active {\n        stroke: #003366 !important;\n        fill: #0066cc !important;\n      }\n\n      .link--highlight {\n        stroke: #FF0000 !important;\n        stroke-width: 1.5px;\n      }\n\n      .link--root {\n        stroke: #0000FF;\n        stroke-width: 3px;\n      }\n\n      .link--hidden {\n        display: none;\n      }\n\n      .node--collapsed {\n        r: 4px !important; \n        fill: #0066cc !important;\n      }\n\n      .tooltip-node {\n        position: absolute;\n        background: white;\n        padding: 5px;\n        border: 1px solid #ccc;\n        border-radius: 4px;\n        font-size: 12px;\n        z-index: 10;\n      }\n    ");
         // Link functions
         function linkhovered(active) {
             return function (event, d) {

@@ -22,3 +22,50 @@
 .menu-btn:hover {
   background: #e0e0e0;
 }
+
+.link--active {
+  stroke: #000 !important;
+  stroke-width: 2px;
+}
+
+.link--important {
+  stroke: #00F !important;
+  stroke-width: 1.5px;
+}
+
+.link-extension--active {
+  stroke-opacity: .6;
+}
+
+.label--active {
+  font-weight: bold;
+}
+
+.node--active {
+  stroke: #003366 !important;
+  fill: #0066cc !important;
+}
+
+.link--highlight {
+  stroke: #FF0000 !important;
+  stroke-width: 1.5px;
+}
+
+.link--hidden {
+  display: none;
+}
+
+.node--collapsed {
+  r: 4px !important;
+  fill: #0066cc !important;
+}
+
+.tooltip-node {
+  position: absolute;
+  background: white;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 12px;
+  z-index: 10;
+}

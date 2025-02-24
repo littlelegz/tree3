@@ -7,7 +7,8 @@ TODO
 ## Features
 * Layouts: Radial, Rectangular, Unrooted (Equal-Angle)
 * Pan/Zoom functionality
-
+* Callback functions for tree interactions
+* Customizable menu options for links, nodes, and leaves
 
 ## Tree params
 
@@ -16,7 +17,7 @@ TODO
 
 ### width
   (Radial tree only!)
-  `(number)` Determines the width of the generated svg.
+  `(number)` Determines the width of the generated svg. Defaults to ``1000``.
 
 ### scale 
   (Unrooted tree only!)
@@ -58,7 +59,7 @@ Array of objects with the following properties:
 |----------|------|-------------|
 | `label` | `function(sourceNode, targetNode) => string` | Determines the label of the custom option |
 | `onClick` | `function(sourceNode, targetNode) => void` | Callback function when option is selected |
-| `toShow` | `function(sourceNode, targetNode) => boolean` | Determines whether to show this option for the given node |
+| `toShow` | `function(sourceNode, targetNode) => boolean` | Determines whether to show this option for the given link |
 
 
 ### nodeStyler, leafStyler
@@ -85,7 +86,7 @@ These functions can be accessed through the useRef React hook of the tree elemen
 ### setVariableLinks (boolean)
   Determines whether to render the links according to their length.
   For a radial tree, this defaults to ``false``.
-  For a rectangular tree, this defaults to ``true``.
+  For a rectangular tree, this defaults to ``false``.
   Unrooted trees do not have this function.
 
 ### setDisplayLeaves (boolean)

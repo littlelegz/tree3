@@ -1,5 +1,5 @@
 import './App.css';
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef, useMemo, use } from 'react';
 import { default as RadialTree } from './components/radial';
 import { default as RectTree } from './components/rect';
 import { default as UnrootedTree } from './components/unrooted';
@@ -15,6 +15,8 @@ function App() {
   const unrootedContainerRef = useRef(null);
   const [searchValue, setSearchValue] = useState("Node10");
   const [variableLinks, setVariableLinks] = useState(false);
+  const [displayLeaves, setDisplayLeaves] = useState(true);
+  const [tipAlign, setTipAlign] = useState(false);
 
   useEffect(() => {
     fetch('/asr.tree')
@@ -31,6 +33,21 @@ function App() {
     }
   }, [variableLinks]);
 
+  useEffect(() => {
+    if (rectRef?.current && radialRef?.current && unrootedRef?.current) {
+      rectRef.current.setDisplayLeaves(displayLeaves);
+      radialRef.current.setDisplayLeaves(displayLeaves);
+      unrootedRef.current.setDisplayLeaves(displayLeaves);
+    }
+  }, [displayLeaves]);
+
+  useEffect(() => {
+    if (rectRef?.current && radialRef?.current) {
+      rectRef.current.setTipAlign(tipAlign);
+      radialRef.current.setTipAlign(tipAlign);
+    }
+  }, [tipAlign]);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', margin: '10px' }}>
       <div className="App" style={{ display: 'flex', flexDirection: 'row' }}>
@@ -41,11 +58,11 @@ function App() {
           <RectTree data={tree} ref={rectRef} />
         </div>
         <div ref={unrootedContainerRef} style={{ width: "33%", height: "500px", border: "1px solid black", overflow: "hidden" }}>
-          <UnrootedTree 
-          data={tree} 
-          ref={unrootedRef} 
-          onNodeClick={(ev, node) => console.log(node)}
-          homeNode={"bilR"}
+          <UnrootedTree
+            data={tree}
+            ref={unrootedRef}
+            onNodeClick={(ev, node) => console.log(node)}
+            homeNode={"bilR"}
           />
         </div>
       </div>
@@ -63,10 +80,19 @@ function App() {
             unrootedRef.current.findAndZoom(searchValue, unrootedContainerRef);
           }
         }}>
-          Search
+          Find
         </button>
-        <button onClick={() => {rectRef.current.refresh(); radialRef.current.refresh(); unrootedRef.current.refresh();}}>
+        <button onClick={() => { rectRef.current.refresh(); radialRef.current.refresh(); unrootedRef.current.refresh(); }}>
           Reset
+        </button>
+        <button onClick={() => { setVariableLinks(!variableLinks); }}>
+          Toggle Variable Links
+        </button>
+        <button onClick={() => { setDisplayLeaves(!displayLeaves); }}>
+          Toggle Leaf Labels
+        </button>
+        <button onClick={() => { setTipAlign(!tipAlign); }}>
+          Toggle Leaf Alignment
         </button>
       </div>
     </div>
