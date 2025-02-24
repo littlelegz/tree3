@@ -34,7 +34,7 @@
     "start:example": "cd example && npm start",
     "build:example": "cd example && npm run build"
   },
-  "homepage": "https://littlelegz.github.io/tree3",
+  "homepage": "https://github.com/littlelegz/tree3",
   "eslintConfig": {
     "extends": [
       "react-app",

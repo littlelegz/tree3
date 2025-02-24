@@ -2,7 +2,7 @@
 A javascript library for generating interactive phylogenetic tree visualizations. Relies on [D3](http://d3js.org) [hierarchy layout](https://github.com/d3/d3-3.x-api-reference/blob/master/Hierarchy-Layout.md) to generate SVG elements, with a focus on customizability.
 
 ## Example Github Page
-TODO
+Check out the Radial, Rectangular, and Unrooted trees in this [demo](https://littlelegz.github.io/tree3/)!
 
 ## Features
 * Layouts: Radial, Rectangular, Unrooted (Equal-Angle)

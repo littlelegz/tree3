@@ -19,7 +19,7 @@ function App() {
   const [tipAlign, setTipAlign] = useState(false);
 
   useEffect(() => {
-    fetch('/asr.tree')
+    fetch('asr.tree')
       .then((response) => response.text())
       .then((data) => {
         setTree(data);
