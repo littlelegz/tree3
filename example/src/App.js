@@ -19,7 +19,7 @@ function App() {
   const [tipAlign, setTipAlign] = useState(false);
 
   useEffect(() => {
-    fetch('asr.tree')
+    fetch(`${process.env.PUBLIC_URL}/asr.tree`)
       .then((response) => response.text())
       .then((data) => {
         setTree(data);
@@ -52,10 +52,18 @@ function App() {
     <div style={{ display: 'flex', flexDirection: 'column', margin: '10px' }}>
       <div className="App" style={{ display: 'flex', flexDirection: 'row' }}>
         <div ref={radialContainerRef} style={{ width: "33%", height: "500px", border: "1px solid black", overflow: "hidden" }}>
-          <RadialTree data={tree} ref={radialRef} />
+          <RadialTree
+            data={tree}
+            ref={radialRef}
+            state={{ root: "Node11" }}
+          />
         </div>
         <div ref={rectContainerRef} style={{ width: "33%", height: "500px", border: "1px solid black", overflow: "hidden" }}>
-          <RectTree data={tree} ref={rectRef} />
+          <RectTree
+            data={tree}
+            ref={rectRef}
+            state={{ root: "Node11" }}
+          />
         </div>
         <div ref={unrootedContainerRef} style={{ width: "33%", height: "500px", border: "1px solid black", overflow: "hidden" }}>
           <UnrootedTree
@@ -63,6 +71,7 @@ function App() {
             ref={unrootedRef}
             onNodeClick={(ev, node) => console.log(node)}
             homeNode={"bilR"}
+            state={{ root: "Node74" }}
           />
         </div>
       </div>
@@ -93,6 +102,9 @@ function App() {
         </button>
         <button onClick={() => { setTipAlign(!tipAlign); }}>
           Toggle Leaf Alignment
+        </button>
+        <button onClick={() => { radialRef.current.findAndReroot("Node11") }}>
+          findAndReroot
         </button>
       </div>
     </div>

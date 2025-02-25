@@ -52,6 +52,7 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
   linkStyler,
   leafStyler,
   homeNode,
+  state
 }, ref) => {
   const [variableLinks, setVariableLinks] = useState(false);
   const [displayLeaves, setDisplayLeaves] = useState(true);
@@ -66,6 +67,7 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
   const variableLinksRef = useRef<boolean>(false); // Using this ref so highlighting descendants updates correctly
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [varData, setVarData] = useState<RadialNode | null>(null);
+  const initialStateApplied = useRef(false);
 
   useEffect(() => { // Read data and convert to d3 format
     if (!data) return;
@@ -458,7 +460,7 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
             <div className="dropdown-divider" />
             <a className="dropdown-item" onClick={() => {
               if (varData) {
-                setVarData(reroot(d, varData)); // NOTE, can only reroot once. Calls will always be calculated from original tree
+                setVarData(reroot(d, varData));
               }
             }}>
               Reroot Here
@@ -540,6 +542,17 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
     }
   }, [varData, width]);
 
+  useEffect(() => { // If state is provided, apply it once
+    if (!initialStateApplied.current && state && varData) {
+      initialStateApplied.current = true;
+
+      // Apply root if specified
+      if (state.root) {
+        findAndReroot(state.root);
+      }
+    }
+  }, [varData, state]);
+
   useEffect(() => { // Transition between variable and constant links, and tip alignment
     const t = d3.transition().duration(750);
     if (!tipAlign) {
@@ -585,6 +598,30 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
       .attr('transform', "translate(50,0)");
   };
 
+  const findAndReroot = (name: string) => {
+    // Recursively search through data for node with name
+    if (varData) {
+      const findNode = (node: RadialNode): RadialNode | null => {
+        if (node.data.name === name) {
+          return node;
+        }
+        if (node.children) {
+          for (const child of node.children) {
+            const found = findNode(child);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+
+      // Find node and reroot if found
+      const targetNode = findNode(varData);
+      if (targetNode) {
+        setVarData(reroot(targetNode, varData));
+      }
+    }
+  };
+
   useImperativeHandle(ref, () => ({
     getLinkExtensions: () => linkExtensionRef.current,
     getLinks: () => linkRef.current,
@@ -601,7 +638,9 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
       if (svgRef.current) {
         findAndZoom(name, d3.select(svgRef.current), container, variableLinks);
       }
-    }
+    },
+    findAndReroot: findAndReroot,
+    getState: () => state
   }));
 
   return (

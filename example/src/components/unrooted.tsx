@@ -50,6 +50,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
   leafStyler,
   homeNode,
   linkRoot = true,
+  state
 }, ref) => {
   const [displayLeaves, setDisplayLeaves] = useState(true);
   const linkExtensionRef = useRef<d3.Selection<SVGPathElement, Link<UnrootedNode>, SVGGElement, unknown>>(null);
@@ -61,6 +62,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
   const svgRef = useRef<SVGSVGElement>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [varData, setVarData] = useState<UnrootedData | null>(null);
+  const initialStateApplied = useRef(false); // Used to prevent infinite loop when setting state
 
   // Read tree and calculate layout
   useEffect(() => {
@@ -222,7 +224,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
           <div className="menu-buttons">
             <div className="dropdown-divider" />
 
-            <a className="dropdown-item" onClick={() => rootOnBranch(d)}>
+            <a className="dropdown-item" onClick={() => varData && rootOnBranch(d, varData)}>
               Root Here
             </a>
             <div className="dropdown-divider" />
@@ -606,7 +608,20 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
         svgMain.call(zoom.transform, initialTransform);
       }
     }
+
+
   }, [varData]);
+
+  useEffect(() => {
+    if (!initialStateApplied.current && state && varData) {
+      initialStateApplied.current = true;
+
+      // Apply root if specified
+      if (state.root) {
+        findAndReroot(state.root);
+      }
+    }
+  }, [varData, state]);
 
   useEffect(() => { // Toggle leaf label visibility
     leafLabelsRef.current?.style("display", displayLeaves ? "block" : "none");
@@ -621,7 +636,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
       .attr('transform', "translate(0,0)");
   };
 
-  const rootOnBranch = useMemo(() => (d: Link<UnrootedNode>) => {
+  const rootOnBranch = (d: Link<UnrootedNode>, data: UnrootedData): void => {
     const rootNode = {
       parent: null,
       parentId: null,
@@ -662,7 +677,31 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
         }
       });
     }
-  }, [varData]);
+  };
+
+  const findAndReroot = (name: string) => {
+    // Recursively search through data for node with name
+    if (varData) {
+      const findNode = (nodes: UnrootedNode[]): UnrootedNode | null => {
+        for (const node of nodes) {
+          if (node.thisName === name) {
+            return node;
+          }
+        }
+        return null;
+      };
+
+      // Find node and reroot if found
+      console.log("Finding node: ", name);
+      const targetNode = findNode(varData.data);
+      if (targetNode) {
+        if (targetNode.linkNode) {
+          console.log("Rerooting on branch: ", targetNode);
+          rootOnBranch(d3.select(targetNode.linkNode).datum() as Link<UnrootedNode>, varData);
+        }
+      }
+    }
+  };
 
   useImperativeHandle(ref, () => ({
     getLinkExtensions: () => linkExtensionRef.current,

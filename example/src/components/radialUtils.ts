@@ -214,7 +214,7 @@ export function findAndZoom(name: string, svg: d3.Selection<SVGSVGElement, unkno
     const cartY = distance * Math.sin(x);
 
     const centerOffsetX = container.current.clientWidth / 2;
-    const centerOffsetY = container.current.clientHeight / 2; // This offset is based on #tree-div h/w. This is improper. TODO: Fix centering
+    const centerOffsetY = container.current.clientHeight / 2; 
 
     const zoom = d3.zoom().on("zoom", (event) => {
       svg.select("g").attr("transform", event.transform);
