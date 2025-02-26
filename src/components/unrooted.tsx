@@ -643,9 +643,6 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
   };
 
   const rootOnBranch = (d: Link<UnrootedNode>): void => {
-
-    const eq = fortify(equalAngleLayout(readTree(data))); // Recalculate layout
-
     const rootNode = {
       parent: null,
       parentId: null,
@@ -673,7 +670,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
       target: d.target
     }]
 
-    const newData = addRoot(eq ?? [], d.source, d.target);
+    const newData = addRoot(varData?.data ?? [], d.source, d.target);
     var newEdges = edges(newData);
 
     setVarData({
@@ -783,15 +780,22 @@ function edges(df: UnrootedNode[]) {
   return result;
 }
 
+/**
+ * 
+ * @param df List of nodes
+ * @param rootLeft Node left of root
+ * @param rootRight Node right of root
+ * @returns df with root added
+ */
 function addRoot(df: UnrootedNode[], rootLeft: UnrootedNode, rootRight: UnrootedNode): UnrootedNode[] {
-
-
   function swap(node: UnrootedNode) {
     let current = node;
     let parent = node.parent;
 
     //remove current from parent's children, add parent to current's children
-    while (parent) {
+    while (parent && parent != current) { // second condition to prevent infinite loop when double rerooting
+      console.log("swapping parent and child", current, parent)
+
       parent.children = parent.children.filter(child => child !== current);
       parent.parentId = current.thisId;
       current.children.push(parent);

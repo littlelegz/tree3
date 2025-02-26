@@ -4894,6 +4894,10 @@ var RectTree = React.forwardRef(function (_a, ref) {
     var _f = React.useState(0), refreshTrigger = _f[0], setRefreshTrigger = _f[1];
     var _g = React.useState(null), varData = _g[0], setVarData = _g[1];
     var initialStateApplied = React.useRef(false);
+    var stateRef = React.useRef(state);
+    React.useEffect(function () {
+        stateRef.current = state;
+    }, [state]);
     React.useEffect(function () {
         if (!data)
             return;
@@ -5223,6 +5227,7 @@ var RectTree = React.forwardRef(function (_a, ref) {
                     React.createElement("a", { className: "dropdown-item", onClick: function () {
                             if (varData) {
                                 setVarData(reroot(d, varData));
+                                stateRef.current = { root: d.data.name };
                             }
                         } }, "Reroot Here"),
                     React.createElement("div", { className: "dropdown-divider" }), customNodeMenuItems === null || customNodeMenuItems === void 0 ? void 0 :
@@ -5364,7 +5369,7 @@ var RectTree = React.forwardRef(function (_a, ref) {
         recenterView: function () { return recenterView(); },
         refresh: function () {
             setRefreshTrigger(function (prev) { return prev + 1; });
-            state = undefined;
+            stateRef.current = undefined;
         },
         getRoot: function () { return varData; },
         getContainer: function () { return containerRef.current; },
@@ -5374,7 +5379,7 @@ var RectTree = React.forwardRef(function (_a, ref) {
             }
         },
         findAndReroot: findAndReroot,
-        getState: function () { return state; }
+        getState: function () { return stateRef.current; }
     }); });
     return (React.createElement("div", { className: "radial-tree", style: { width: "100%", height: "100%" } },
         React.createElement("div", { ref: containerRef, style: {
@@ -5400,6 +5405,7 @@ var RadialTree = React.forwardRef(function (_a, ref) {
     var _f = React.useState(0), refreshTrigger = _f[0], setRefreshTrigger = _f[1];
     var _g = React.useState(null), varData = _g[0], setVarData = _g[1];
     var initialStateApplied = React.useRef(false);
+    var stateRef = React.useRef(state);
     var outerRadius = width / 2;
     var innerRadius = outerRadius - 170;
     React.useEffect(function () {
@@ -5732,12 +5738,7 @@ var RadialTree = React.forwardRef(function (_a, ref) {
                     React.createElement("a", { className: "dropdown-item", onClick: function () {
                             if (varData) {
                                 setVarData(reroot(d, varData));
-                                if (state) { // update state if provided
-                                    state.root = d.data.name;
-                                }
-                                else {
-                                    state = { root: d.data.name };
-                                }
+                                stateRef.current = { root: d.data.name };
                             }
                         } }, "Reroot Here"),
                     React.createElement("div", { className: "dropdown-divider" }), customNodeMenuItems === null || customNodeMenuItems === void 0 ? void 0 :
@@ -5883,7 +5884,7 @@ var RadialTree = React.forwardRef(function (_a, ref) {
         recenterView: function () { return recenterView(); },
         refresh: function () {
             setRefreshTrigger(function (prev) { return prev + 1; });
-            state = undefined;
+            stateRef.current = undefined;
         },
         getRoot: function () { return varData; },
         getContainer: function () { return containerRef.current; },
@@ -5893,7 +5894,7 @@ var RadialTree = React.forwardRef(function (_a, ref) {
             }
         },
         findAndReroot: findAndReroot,
-        getState: function () { return state; }
+        getState: function () { return stateRef.current; }
     }); });
     return (React.createElement("div", { className: "radial-tree", style: { width: "100%", height: "100%" } },
         React.createElement("div", { ref: containerRef, style: {
@@ -6161,6 +6162,7 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
     var _e = React.useState(0), refreshTrigger = _e[0], setRefreshTrigger = _e[1];
     var _f = React.useState(null), varData = _f[0], setVarData = _f[1];
     var initialStateApplied = React.useRef(false); // Used to prevent infinite loop when setting state
+    var stateRef = React.useRef(state);
     // Read tree and calculate layout
     React.useEffect(function () {
         if (!data)
@@ -6300,7 +6302,12 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
                     d.target.thisName),
                 React.createElement("div", { className: "menu-buttons" },
                     React.createElement("div", { className: "dropdown-divider" }),
-                    React.createElement("a", { className: "dropdown-item", onClick: function () { return varData && rootOnBranch(d); } }, "Root Here"),
+                    React.createElement("a", { className: "dropdown-item", onClick: function () {
+                            if (varData) {
+                                rootOnBranch(d);
+                                stateRef.current = { root: d.target.thisName };
+                            }
+                        } }, "Root Here"),
                     React.createElement("div", { className: "dropdown-divider" }), customLinkMenuItems === null || customLinkMenuItems === void 0 ? void 0 :
                     customLinkMenuItems.map(function (item) {
                         if (item.toShow(d.source, d.target)) {
@@ -6640,7 +6647,7 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
             .attr('transform', "translate(0,0)");
     };
     var rootOnBranch = function (d) {
-        var eq = fortify(equalAngleLayout(readTree(data))); // Recalculate layout
+        var _a;
         var rootNode = {
             parent: null,
             parentId: null,
@@ -6666,7 +6673,7 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
                 source: rootNode,
                 target: d.target
             }];
-        var newData = addRoot(eq !== null && eq !== void 0 ? eq : [], d.source, d.target);
+        var newData = addRoot((_a = varData === null || varData === void 0 ? void 0 : varData.data) !== null && _a !== void 0 ? _a : [], d.source, d.target);
         var newEdges = edges(newData);
         setVarData({
             data: newData,
@@ -6717,7 +6724,7 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
                 findAndZoom(name, select(svgRef.current), container, scale);
             }
         },
-        getState: function () { return state; },
+        getState: function () { return stateRef.current; }
     }); });
     return (React.createElement("div", { className: "radial-tree", style: { width: "100%", height: "100%" } },
         React.createElement("div", { ref: containerRef, style: {
@@ -6760,12 +6767,20 @@ function edges(df) {
     }
     return result;
 }
+/**
+ *
+ * @param df List of nodes
+ * @param rootLeft Node left of root
+ * @param rootRight Node right of root
+ * @returns df with root added
+ */
 function addRoot(df, rootLeft, rootRight) {
     function swap(node) {
         var current = node;
         var parent = node.parent;
         //remove current from parent's children, add parent to current's children
-        while (parent) {
+        while (parent && parent != current) { // second condition to prevent infinite loop when double rerooting
+            console.log("swapping parent and child", current, parent);
             parent.children = parent.children.filter(function (child) { return child !== current; });
             parent.parentId = current.thisId;
             current.children.push(parent);
