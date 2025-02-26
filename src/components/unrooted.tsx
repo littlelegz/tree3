@@ -63,7 +63,12 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [varData, setVarData] = useState<UnrootedData | null>(null);
   const initialStateApplied = useRef(false); // Used to prevent infinite loop when setting state
+  const stateRef = useRef(state);
 
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+  
   // Read tree and calculate layout
   useEffect(() => {
     if (!data) return;
@@ -722,7 +727,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
         findAndZoom(name, d3.select(svgRef.current), container, scale);
       }
     },
-    getState: () => state,
+    getState: () => stateRef.current
   }));
 
   return (

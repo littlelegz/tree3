@@ -66,9 +66,14 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [varData, setVarData] = useState<RadialNode | null>(null);
   const initialStateApplied = useRef(false);
+  const stateRef = useRef(state);
 
   const outerRadius = width / 2;
   const innerRadius = outerRadius - 170;
+
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   useEffect(() => {
     if (!data) return;
@@ -663,7 +668,7 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       }
     },
     findAndReroot: findAndReroot,
-    getState: () => state
+    getState: () => stateRef.current
   }));
 
   return (

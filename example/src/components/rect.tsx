@@ -68,6 +68,11 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [varData, setVarData] = useState<RadialNode | null>(null);
   const initialStateApplied = useRef(false);
+  const stateRef = useRef(state);
+
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   useEffect(() => { // Read data and convert to d3 format
     if (!data) return;
@@ -461,6 +466,7 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
             <a className="dropdown-item" onClick={() => {
               if (varData) {
                 setVarData(reroot(d, varData));
+                
               }
             }}>
               Reroot Here
@@ -643,7 +649,7 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
       }
     },
     findAndReroot: findAndReroot,
-    getState: () => state
+    getState: () => stateRef.current
   }));
 
   return (
