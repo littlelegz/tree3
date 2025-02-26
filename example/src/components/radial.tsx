@@ -29,6 +29,7 @@ export interface RadialTreeRef {
   getRoot: () => RadialNode | null;
   getContainer: () => HTMLDivElement | null;
   findAndZoom: (name: string, container: React.MutableRefObject<HTMLDivElement>) => void;
+  getState: () => { root?: string } | undefined;
 }
 
 const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
@@ -70,10 +71,6 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
 
   const outerRadius = width / 2;
   const innerRadius = outerRadius - 170;
-
-  useEffect(() => {
-    stateRef.current = state;
-  }, [state]);
 
   useEffect(() => {
     if (!data) return;
@@ -477,11 +474,7 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
             <a className="dropdown-item" onClick={() => {
               if (varData) {
                 setVarData(reroot(d, varData));
-                if (state) { // update state if provided
-                  state.root = d.data.name;
-                } else {
-                  state = { root: d.data.name };
-                }
+                stateRef.current = { root: d.data.name };
               }
             }}>
               Reroot Here
@@ -658,7 +651,7 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     recenterView: () => recenterView(),
     refresh: () => {
       setRefreshTrigger(prev => prev + 1);
-      state = undefined;
+      stateRef.current = undefined;
     },
     getRoot: () => varData,
     getContainer: () => containerRef.current,

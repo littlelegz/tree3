@@ -65,10 +65,6 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
   const initialStateApplied = useRef(false); // Used to prevent infinite loop when setting state
   const stateRef = useRef(state);
 
-  useEffect(() => {
-    stateRef.current = state;
-  }, [state]);
-  
   // Read tree and calculate layout
   useEffect(() => {
     if (!data) return;
@@ -229,7 +225,12 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
           <div className="menu-buttons">
             <div className="dropdown-divider" />
 
-            <a className="dropdown-item" onClick={() => varData && rootOnBranch(d)}>
+            <a className="dropdown-item" onClick={() => {
+              if (varData) {
+                rootOnBranch(d);
+                stateRef.current = { root: d.target.thisName };
+              }
+            }}>
               Root Here
             </a>
             <div className="dropdown-divider" />

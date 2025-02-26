@@ -106,6 +106,9 @@ function App() {
         <button onClick={() => { radialRef.current.findAndReroot("Node11") }}>
           findAndReroot
         </button>
+        <button onClick={() => { console.log(radialRef.current.getState()) }}>
+          print state
+        </button>
       </div>
     </div>
   );

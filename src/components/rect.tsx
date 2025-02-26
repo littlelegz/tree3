@@ -466,7 +466,7 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
             <a className="dropdown-item" onClick={() => {
               if (varData) {
                 setVarData(reroot(d, varData));
-                
+                stateRef.current = { root: d.data.name };
               }
             }}>
               Reroot Here
@@ -639,7 +639,7 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
     recenterView: () => recenterView(),
     refresh: () => {
       setRefreshTrigger(prev => prev + 1);
-      state = undefined;
+      stateRef.current = undefined;
     },
     getRoot: () => varData,
     getContainer: () => containerRef.current,
