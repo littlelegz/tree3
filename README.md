@@ -113,6 +113,12 @@ These functions can be accessed through the useRef React hook of the tree elemen
 ### findAndZoom (query)
   Pans the svg to center the node or leaf.
 
+## Tree State
+  Stores the changes made to a tree in an object. When a tree is rendered given a state object,
+  any applicable transforms will be applied once when first initialized.
+### Root
+  `state.root: string` will find a given node name and reroot to this node.
+
 ## Running example
 
 ```bash

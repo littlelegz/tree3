@@ -224,7 +224,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
           <div className="menu-buttons">
             <div className="dropdown-divider" />
 
-            <a className="dropdown-item" onClick={() => varData && rootOnBranch(d, varData)}>
+            <a className="dropdown-item" onClick={() => varData && rootOnBranch(d)}>
               Root Here
             </a>
             <div className="dropdown-divider" />
@@ -618,7 +618,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
 
       // Apply root if specified
       if (state.root) {
-        findAndReroot(state.root);
+        findAndAddRoot(state.root);
       }
     }
   }, [varData, state]);
@@ -636,7 +636,10 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
       .attr('transform', "translate(0,0)");
   };
 
-  const rootOnBranch = (d: Link<UnrootedNode>, data: UnrootedData): void => {
+  const rootOnBranch = (d: Link<UnrootedNode>): void => {
+
+    const eq = fortify(equalAngleLayout(readTree(data))); // Recalculate layout
+
     const rootNode = {
       parent: null,
       parentId: null,
@@ -664,22 +667,21 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
       target: d.target
     }]
 
-    const newData = addRoot(varData?.data ?? [], d.source, d.target);
+    const newData = addRoot(eq ?? [], d.source, d.target);
     var newEdges = edges(newData);
 
-    if (varData) {
-      setVarData({
-        data: newData,
-        edges: newEdges,
-        root: {
-          node: rootNode,
-          edges: rootEdges
-        }
-      });
-    }
+    setVarData({
+      data: newData,
+      edges: newEdges,
+      root: {
+        node: rootNode,
+        edges: rootEdges
+      }
+    });
+
   };
 
-  const findAndReroot = (name: string) => {
+  const findAndAddRoot = (name: string) => {
     // Recursively search through data for node with name
     if (varData) {
       const findNode = (nodes: UnrootedNode[]): UnrootedNode | null => {
@@ -692,12 +694,10 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
       };
 
       // Find node and reroot if found
-      console.log("Finding node: ", name);
       const targetNode = findNode(varData.data);
       if (targetNode) {
         if (targetNode.linkNode) {
-          console.log("Rerooting on branch: ", targetNode);
-          rootOnBranch(d3.select(targetNode.linkNode).datum() as Link<UnrootedNode>, varData);
+          rootOnBranch(d3.select(targetNode.linkNode).datum() as Link<UnrootedNode>);
         }
       }
     }
@@ -710,7 +710,10 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     getLeaves: () => leafLabelsRef.current,
     setDisplayLeaves: (value: boolean) => setDisplayLeaves(value),
     recenterView: () => recenterView(),
-    refresh: () => setRefreshTrigger(prev => prev + 1),
+    refresh: () => {
+      setRefreshTrigger(prev => prev + 1);
+      state = undefined;
+    },
     getRoot: () => varData,
     getData: () => varData,
     getContainer: () => containerRef.current,
@@ -719,6 +722,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
         findAndZoom(name, d3.select(svgRef.current), container, scale);
       }
     },
+    getState: () => state,
   }));
 
   return (

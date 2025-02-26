@@ -50,6 +50,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
   leafStyler,
   homeNode,
   linkRoot = true,
+  state
 }, ref) => {
   const [displayLeaves, setDisplayLeaves] = useState(true);
   const linkExtensionRef = useRef<d3.Selection<SVGPathElement, Link<UnrootedNode>, SVGGElement, unknown>>(null);
@@ -61,6 +62,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
   const svgRef = useRef<SVGSVGElement>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [varData, setVarData] = useState<UnrootedData | null>(null);
+  const initialStateApplied = useRef(false); // Used to prevent infinite loop when setting state
 
   // Read tree and calculate layout
   useEffect(() => {
@@ -222,7 +224,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
           <div className="menu-buttons">
             <div className="dropdown-divider" />
 
-            <a className="dropdown-item" onClick={() => rootOnBranch(d)}>
+            <a className="dropdown-item" onClick={() => varData && rootOnBranch(d)}>
               Root Here
             </a>
             <div className="dropdown-divider" />
@@ -606,7 +608,20 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
         svgMain.call(zoom.transform, initialTransform);
       }
     }
+
+
   }, [varData]);
+
+  useEffect(() => {
+    if (!initialStateApplied.current && state && varData) {
+      initialStateApplied.current = true;
+
+      // Apply root if specified
+      if (state.root) {
+        findAndAddRoot(state.root);
+      }
+    }
+  }, [varData, state]);
 
   useEffect(() => { // Toggle leaf label visibility
     leafLabelsRef.current?.style("display", displayLeaves ? "block" : "none");
@@ -618,10 +633,13 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
 
     svg.transition()
       .duration(750)
-      .attr('transform', "translate(0,0)"); // TODO recenter to initalTransform, not (0,0)
+      .attr('transform', "translate(0,0)");
   };
 
-  const rootOnBranch = useMemo(() => (d: Link<UnrootedNode>) => {
+  const rootOnBranch = (d: Link<UnrootedNode>): void => {
+
+    const eq = fortify(equalAngleLayout(readTree(data))); // Recalculate layout
+
     const rootNode = {
       parent: null,
       parentId: null,
@@ -649,20 +667,41 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
       target: d.target
     }]
 
-    const newData = addRoot(varData?.data ?? [], d.source, d.target);
+    const newData = addRoot(eq ?? [], d.source, d.target);
     var newEdges = edges(newData);
 
+    setVarData({
+      data: newData,
+      edges: newEdges,
+      root: {
+        node: rootNode,
+        edges: rootEdges
+      }
+    });
+
+  };
+
+  const findAndAddRoot = (name: string) => {
+    // Recursively search through data for node with name
     if (varData) {
-      setVarData({
-        data: newData,
-        edges: newEdges,
-        root: {
-          node: rootNode,
-          edges: rootEdges
+      const findNode = (nodes: UnrootedNode[]): UnrootedNode | null => {
+        for (const node of nodes) {
+          if (node.thisName === name) {
+            return node;
+          }
         }
-      });
+        return null;
+      };
+
+      // Find node and reroot if found
+      const targetNode = findNode(varData.data);
+      if (targetNode) {
+        if (targetNode.linkNode) {
+          rootOnBranch(d3.select(targetNode.linkNode).datum() as Link<UnrootedNode>);
+        }
+      }
     }
-  }, [varData]);
+  };
 
   useImperativeHandle(ref, () => ({
     getLinkExtensions: () => linkExtensionRef.current,
@@ -671,7 +710,10 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     getLeaves: () => leafLabelsRef.current,
     setDisplayLeaves: (value: boolean) => setDisplayLeaves(value),
     recenterView: () => recenterView(),
-    refresh: () => setRefreshTrigger(prev => prev + 1),
+    refresh: () => {
+      setRefreshTrigger(prev => prev + 1);
+      state = undefined;
+    },
     getRoot: () => varData,
     getData: () => varData,
     getContainer: () => containerRef.current,
@@ -680,6 +722,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
         findAndZoom(name, d3.select(svgRef.current), container, scale);
       }
     },
+    getState: () => state,
   }));
 
   return (

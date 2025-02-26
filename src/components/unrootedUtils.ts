@@ -43,7 +43,6 @@ export const countLeaves = (node: UnrootedNode): number => {
   return node.children.reduce((sum: number, child: any) => sum + countLeaves(child), 0);
 };
 
-// TODO, debug function after rerooting on branch
 export function highlightClade(node: UnrootedNode, active: boolean, svg: d3.Selection<SVGGElement, unknown, null, undefined>, scale: number): void {
   if (node.isTip) return;
 

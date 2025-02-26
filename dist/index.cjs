@@ -4605,7 +4605,7 @@ function findAndZoom$2(name, svg, container, variable) {
         var cartX = distance * Math.cos(x);
         var cartY = distance * Math.sin(x);
         var centerOffsetX = container.current.clientWidth / 2;
-        var centerOffsetY = container.current.clientHeight / 2; // This offset is based on #tree-div h/w. This is improper. TODO: Fix centering
+        var centerOffsetY = container.current.clientHeight / 2;
         var zoom$1 = zoom().on("zoom", function (event) {
             svg.select("g").attr("transform", event.transform);
         });
@@ -4879,7 +4879,7 @@ var css_248z = ".dropdown-menu {\r\n  position: absolute;\r\n  top: 100%;\r\n  l
 styleInject(css_248z);
 
 var RectTree = React.forwardRef(function (_a, ref) {
-    var data = _a.data, _b = _a.width, width = _b === void 0 ? 1000 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, customLinkMenuItems = _a.customLinkMenuItems, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler, homeNode = _a.homeNode;
+    var data = _a.data, _b = _a.width, width = _b === void 0 ? 1000 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, customLinkMenuItems = _a.customLinkMenuItems, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler, homeNode = _a.homeNode, state = _a.state;
     var _c = React.useState(false), variableLinks = _c[0], setVariableLinks = _c[1];
     var _d = React.useState(true), displayLeaves = _d[0], setDisplayLeaves = _d[1];
     var _e = React.useState(false), tipAlign = _e[0], setTipAlign = _e[1];
@@ -4893,6 +4893,7 @@ var RectTree = React.forwardRef(function (_a, ref) {
     var variableLinksRef = React.useRef(false); // Using this ref so highlighting descendants updates correctly
     var _f = React.useState(0), refreshTrigger = _f[0], setRefreshTrigger = _f[1];
     var _g = React.useState(null), varData = _g[0], setVarData = _g[1];
+    var initialStateApplied = React.useRef(false);
     React.useEffect(function () {
         if (!data)
             return;
@@ -4985,7 +4986,7 @@ var RectTree = React.forwardRef(function (_a, ref) {
                 if (d.target.linkExtensionNode) {
                     select(d.target.linkExtensionNode).classed("link-extension--active", active).raise();
                 }
-                highlightDescendantsRect(d.target, active, variableLinksRef.current, svg, (_a = varData === null || varData === void 0 ? void 0 : varData.leaves()[0].y) !== null && _a !== void 0 ? _a : 0); // TODO Implement for rectangular tree
+                highlightDescendantsRect(d.target, active, variableLinksRef.current, svg, (_a = varData === null || varData === void 0 ? void 0 : varData.leaves()[0].y) !== null && _a !== void 0 ? _a : 0);
             };
         }
         function linkClicked(event, d) {
@@ -5221,7 +5222,7 @@ var RectTree = React.forwardRef(function (_a, ref) {
                     React.createElement("div", { className: "dropdown-divider" }),
                     React.createElement("a", { className: "dropdown-item", onClick: function () {
                             if (varData) {
-                                setVarData(reroot(d, varData)); // NOTE, can only reroot once. Calls will always be calculated from original tree
+                                setVarData(reroot(d, varData));
                             }
                         } }, "Reroot Here"),
                     React.createElement("div", { className: "dropdown-divider" }), customNodeMenuItems === null || customNodeMenuItems === void 0 ? void 0 :
@@ -5286,6 +5287,15 @@ var RectTree = React.forwardRef(function (_a, ref) {
         }
     }, [varData, width]);
     React.useEffect(function () {
+        if (!initialStateApplied.current && state && varData) {
+            initialStateApplied.current = true;
+            // Apply root if specified
+            if (state.root) {
+                findAndReroot(state.root);
+            }
+        }
+    }, [varData, state]);
+    React.useEffect(function () {
         var _a, _b, _c, _d, _e, _f;
         var t = transition().duration(750);
         if (!tipAlign) {
@@ -5319,6 +5329,30 @@ var RectTree = React.forwardRef(function (_a, ref) {
             .duration(750)
             .attr('transform', "translate(50,0)");
     };
+    var findAndReroot = function (name) {
+        // Recursively search through data for node with name
+        if (varData) {
+            var findNode_1 = function (node) {
+                if (node.data.name === name) {
+                    return node;
+                }
+                if (node.children) {
+                    for (var _i = 0, _a = node.children; _i < _a.length; _i++) {
+                        var child = _a[_i];
+                        var found = findNode_1(child);
+                        if (found)
+                            return found;
+                    }
+                }
+                return null;
+            };
+            // Find node and reroot if found
+            var targetNode = findNode_1(varData);
+            if (targetNode) {
+                setVarData(reroot(targetNode, varData));
+            }
+        }
+    };
     React.useImperativeHandle(ref, function () { return ({
         getLinkExtensions: function () { return linkExtensionRef.current; },
         getLinks: function () { return linkRef.current; },
@@ -5328,14 +5362,19 @@ var RectTree = React.forwardRef(function (_a, ref) {
         setDisplayLeaves: function (value) { return setDisplayLeaves(value); },
         setTipAlign: function (value) { return setTipAlign(value); },
         recenterView: function () { return recenterView(); },
-        refresh: function () { return setRefreshTrigger(function (prev) { return prev + 1; }); },
+        refresh: function () {
+            setRefreshTrigger(function (prev) { return prev + 1; });
+            state = undefined;
+        },
         getRoot: function () { return varData; },
         getContainer: function () { return containerRef.current; },
         findAndZoom: function (name, container) {
             if (svgRef.current) {
                 findAndZoom$1(name, select(svgRef.current), container, variableLinks);
             }
-        }
+        },
+        findAndReroot: findAndReroot,
+        getState: function () { return state; }
     }); });
     return (React.createElement("div", { className: "radial-tree", style: { width: "100%", height: "100%" } },
         React.createElement("div", { ref: containerRef, style: {
@@ -5346,7 +5385,7 @@ var RectTree = React.forwardRef(function (_a, ref) {
 });
 
 var RadialTree = React.forwardRef(function (_a, ref) {
-    var data = _a.data, _b = _a.width, width = _b === void 0 ? 1000 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, customLinkMenuItems = _a.customLinkMenuItems, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler, homeNode = _a.homeNode;
+    var data = _a.data, _b = _a.width, width = _b === void 0 ? 1000 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, customLinkMenuItems = _a.customLinkMenuItems, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler, homeNode = _a.homeNode, state = _a.state;
     var _c = React.useState(false), variableLinks = _c[0], setVariableLinks = _c[1];
     var _d = React.useState(true), displayLeaves = _d[0], setDisplayLeaves = _d[1];
     var _e = React.useState(false), tipAlign = _e[0], setTipAlign = _e[1];
@@ -5360,6 +5399,7 @@ var RadialTree = React.forwardRef(function (_a, ref) {
     var variableLinksRef = React.useRef(false); // Using this ref so highlighting descendants updates correctly
     var _f = React.useState(0), refreshTrigger = _f[0], setRefreshTrigger = _f[1];
     var _g = React.useState(null), varData = _g[0], setVarData = _g[1];
+    var initialStateApplied = React.useRef(false);
     var outerRadius = width / 2;
     var innerRadius = outerRadius - 170;
     React.useEffect(function () {
@@ -5691,7 +5731,13 @@ var RadialTree = React.forwardRef(function (_a, ref) {
                     React.createElement("div", { className: "dropdown-divider" }),
                     React.createElement("a", { className: "dropdown-item", onClick: function () {
                             if (varData) {
-                                setVarData(reroot(d, varData)); // NOTE, can only reroot once. Calls will always be calculated from original tree
+                                setVarData(reroot(d, varData));
+                                if (state) { // update state if provided
+                                    state.root = d.data.name;
+                                }
+                                else {
+                                    state = { root: d.data.name };
+                                }
                             }
                         } }, "Reroot Here"),
                     React.createElement("div", { className: "dropdown-divider" }), customNodeMenuItems === null || customNodeMenuItems === void 0 ? void 0 :
@@ -5758,6 +5804,15 @@ var RadialTree = React.forwardRef(function (_a, ref) {
         }
     }, [varData, width]);
     React.useEffect(function () {
+        if (!initialStateApplied.current && state && varData) {
+            initialStateApplied.current = true;
+            // Apply root if specified
+            if (state.root) {
+                findAndReroot(state.root);
+            }
+        }
+    }, [varData, state]);
+    React.useEffect(function () {
         var _a, _b, _c, _d, _e;
         var t = transition().duration(750);
         if (!tipAlign) {
@@ -5793,6 +5848,30 @@ var RadialTree = React.forwardRef(function (_a, ref) {
             .duration(750)
             .attr('transform', "translate(0,0)");
     };
+    var findAndReroot = function (name) {
+        // Recursively search through data for node with name
+        if (varData) {
+            var findNode_1 = function (node) {
+                if (node.data.name === name) {
+                    return node;
+                }
+                if (node.children) {
+                    for (var _i = 0, _a = node.children; _i < _a.length; _i++) {
+                        var child = _a[_i];
+                        var found = findNode_1(child);
+                        if (found)
+                            return found;
+                    }
+                }
+                return null;
+            };
+            // Find node and reroot if found
+            var targetNode = findNode_1(varData);
+            if (targetNode) {
+                setVarData(reroot(targetNode, varData));
+            }
+        }
+    };
     React.useImperativeHandle(ref, function () { return ({
         getLinkExtensions: function () { return linkExtensionRef.current; },
         getLinks: function () { return linkRef.current; },
@@ -5802,7 +5881,10 @@ var RadialTree = React.forwardRef(function (_a, ref) {
         setDisplayLeaves: function (value) { return setDisplayLeaves(value); },
         setTipAlign: function (value) { return setTipAlign(value); },
         recenterView: function () { return recenterView(); },
-        refresh: function () { return setRefreshTrigger(function (prev) { return prev + 1; }); },
+        refresh: function () {
+            setRefreshTrigger(function (prev) { return prev + 1; });
+            state = undefined;
+        },
         getRoot: function () { return varData; },
         getContainer: function () { return containerRef.current; },
         findAndZoom: function (name, container) {
@@ -5810,6 +5892,8 @@ var RadialTree = React.forwardRef(function (_a, ref) {
                 findAndZoom$2(name, select(svgRef.current), container, variableLinks);
             }
         },
+        findAndReroot: findAndReroot,
+        getState: function () { return state; }
     }); });
     return (React.createElement("div", { className: "radial-tree", style: { width: "100%", height: "100%" } },
         React.createElement("div", { ref: containerRef, style: {
@@ -5854,7 +5938,6 @@ var countLeaves = function (node) {
     }
     return node.children.reduce(function (sum, child) { return sum + countLeaves(child); }, 0);
 };
-// TODO, debug function after rerooting on branch
 function highlightClade(node, active, svg, scale) {
     if (node.isTip)
         return;
@@ -6066,7 +6149,7 @@ function findAndZoom(name, svg, container, scale) {
 }
 
 var UnrootedTree = React.forwardRef(function (_a, ref) {
-    var data = _a.data, _b = _a.scale, scale = _b === void 0 ? 500 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, customLinkMenuItems = _a.customLinkMenuItems, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler, homeNode = _a.homeNode, _c = _a.linkRoot, linkRoot = _c === void 0 ? true : _c;
+    var data = _a.data, _b = _a.scale, scale = _b === void 0 ? 500 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, customLinkMenuItems = _a.customLinkMenuItems, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler, homeNode = _a.homeNode, _c = _a.linkRoot, linkRoot = _c === void 0 ? true : _c, state = _a.state;
     var _d = React.useState(true), displayLeaves = _d[0], setDisplayLeaves = _d[1];
     var linkExtensionRef = React.useRef(null);
     var linkRef = React.useRef(null);
@@ -6077,6 +6160,7 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
     var svgRef = React.useRef(null);
     var _e = React.useState(0), refreshTrigger = _e[0], setRefreshTrigger = _e[1];
     var _f = React.useState(null), varData = _f[0], setVarData = _f[1];
+    var initialStateApplied = React.useRef(false); // Used to prevent infinite loop when setting state
     // Read tree and calculate layout
     React.useEffect(function () {
         if (!data)
@@ -6216,7 +6300,7 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
                     d.target.thisName),
                 React.createElement("div", { className: "menu-buttons" },
                     React.createElement("div", { className: "dropdown-divider" }),
-                    React.createElement("a", { className: "dropdown-item", onClick: function () { return rootOnBranch(d); } }, "Root Here"),
+                    React.createElement("a", { className: "dropdown-item", onClick: function () { return varData && rootOnBranch(d); } }, "Root Here"),
                     React.createElement("div", { className: "dropdown-divider" }), customLinkMenuItems === null || customLinkMenuItems === void 0 ? void 0 :
                     customLinkMenuItems.map(function (item) {
                         if (item.toShow(d.source, d.target)) {
@@ -6536,6 +6620,15 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
         }
     }, [varData]);
     React.useEffect(function () {
+        if (!initialStateApplied.current && state && varData) {
+            initialStateApplied.current = true;
+            // Apply root if specified
+            if (state.root) {
+                findAndAddRoot(state.root);
+            }
+        }
+    }, [varData, state]);
+    React.useEffect(function () {
         var _a, _b;
         (_a = leafLabelsRef.current) === null || _a === void 0 ? void 0 : _a.style("display", displayLeaves ? "block" : "none");
         (_b = linkExtensionRef.current) === null || _b === void 0 ? void 0 : _b.style("display", displayLeaves ? "block" : "none");
@@ -6544,10 +6637,10 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
         var svg = select(containerRef.current).select('svg').select('g');
         svg.transition()
             .duration(750)
-            .attr('transform', "translate(0,0)"); // TODO recenter to initalTransform, not (0,0)
+            .attr('transform', "translate(0,0)");
     };
-    var rootOnBranch = React.useMemo(function () { return function (d) {
-        var _a;
+    var rootOnBranch = function (d) {
+        var eq = fortify(equalAngleLayout(readTree(data))); // Recalculate layout
         var rootNode = {
             parent: null,
             parentId: null,
@@ -6573,19 +6666,38 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
                 source: rootNode,
                 target: d.target
             }];
-        var newData = addRoot((_a = varData === null || varData === void 0 ? void 0 : varData.data) !== null && _a !== void 0 ? _a : [], d.source, d.target);
+        var newData = addRoot(eq !== null && eq !== void 0 ? eq : [], d.source, d.target);
         var newEdges = edges(newData);
+        setVarData({
+            data: newData,
+            edges: newEdges,
+            root: {
+                node: rootNode,
+                edges: rootEdges
+            }
+        });
+    };
+    var findAndAddRoot = function (name) {
+        // Recursively search through data for node with name
         if (varData) {
-            setVarData({
-                data: newData,
-                edges: newEdges,
-                root: {
-                    node: rootNode,
-                    edges: rootEdges
+            var findNode = function (nodes) {
+                for (var _i = 0, nodes_1 = nodes; _i < nodes_1.length; _i++) {
+                    var node = nodes_1[_i];
+                    if (node.thisName === name) {
+                        return node;
+                    }
                 }
-            });
+                return null;
+            };
+            // Find node and reroot if found
+            var targetNode = findNode(varData.data);
+            if (targetNode) {
+                if (targetNode.linkNode) {
+                    rootOnBranch(select(targetNode.linkNode).datum());
+                }
+            }
         }
-    }; }, [varData]);
+    };
     React.useImperativeHandle(ref, function () { return ({
         getLinkExtensions: function () { return linkExtensionRef.current; },
         getLinks: function () { return linkRef.current; },
@@ -6593,7 +6705,10 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
         getLeaves: function () { return leafLabelsRef.current; },
         setDisplayLeaves: function (value) { return setDisplayLeaves(value); },
         recenterView: function () { return recenterView(); },
-        refresh: function () { return setRefreshTrigger(function (prev) { return prev + 1; }); },
+        refresh: function () {
+            setRefreshTrigger(function (prev) { return prev + 1; });
+            state = undefined;
+        },
         getRoot: function () { return varData; },
         getData: function () { return varData; },
         getContainer: function () { return containerRef.current; },
@@ -6602,6 +6717,7 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
                 findAndZoom(name, select(svgRef.current), container, scale);
             }
         },
+        getState: function () { return state; },
     }); });
     return (React.createElement("div", { className: "radial-tree", style: { width: "100%", height: "100%" } },
         React.createElement("div", { ref: containerRef, style: {

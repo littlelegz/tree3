@@ -651,7 +651,10 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     setDisplayLeaves: (value: boolean) => setDisplayLeaves(value),
     setTipAlign: (value: boolean) => setTipAlign(value),
     recenterView: () => recenterView(),
-    refresh: () => setRefreshTrigger(prev => prev + 1),
+    refresh: () => {
+      setRefreshTrigger(prev => prev + 1);
+      state = undefined;
+    },
     getRoot: () => varData,
     getContainer: () => containerRef.current,
     findAndZoom: (name: string, container: React.MutableRefObject<HTMLDivElement>) => {
