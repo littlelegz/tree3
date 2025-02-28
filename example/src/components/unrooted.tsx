@@ -11,10 +11,12 @@ import {
   toggleHighlightDescendantLinks,
   toggleHighlightTerminalLinks,
   toggleCollapseClade,
-  findAndZoom
+  findAndZoom,
+  colorClade
 } from './unrootedUtils.ts';
 import '../css/tree3.css';
 import '../css/menu.css';
+import BasicColorPicker from './colorPicker.tsx';
 
 export interface UnrootedTreeRef {
   getLinkExtensions: () => d3.Selection<SVGPathElement, Link<UnrootedNode>, SVGGElement, unknown> | null;
@@ -517,6 +519,58 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
               Terminal Links
             </a>
             <div className="dropdown-divider" />
+            <a
+              className="dropdown-item"
+              onClick={(e) => {
+                e.preventDefault();
+                const target = e.currentTarget;
+                const picker = target.querySelector('div');
+                if (!picker) return;
+
+                // Toggle visibility of this picker
+                picker.style.display = picker.style.display == "none" ? "block" : "none";
+              }}
+            >
+              Highlight Clade
+              <div
+                style={{
+                  position: 'absolute',
+                  left: `150px`,
+                  top: `180px`,
+                  display: 'none',
+                }}
+              >
+                <BasicColorPicker
+                  onClose={() => { }}
+                  onChange={(color) => {
+                    if (color.hex === null) {
+                      colorClade(d, false, svg, scale, "");
+                      if (stateRef.current && stateRef.current.colorDict) {
+                        const newColorDict = { ...stateRef.current.colorDict };
+                        delete newColorDict[d.data.name];
+                        stateRef.current = {
+                          ...stateRef.current,
+                          colorDict: newColorDict
+                        };
+                      }
+                    } else {
+                      colorClade(d, true, svg, scale, color.hex);
+                      if (!stateRef.current) {
+                        stateRef.current = { colorDict: {} };
+                      }
+                      stateRef.current = {
+                        ...stateRef.current,
+                        colorDict: {
+                          ...(stateRef.current.colorDict || {}),
+                          [d.data.name]: color.hex
+                        }
+                      };
+                    }
+                  }}
+                />
+              </div>
+            </a>
+            <div className="dropdown-divider" />
             {/* Custom menu items */}
             {customNodeMenuItems?.map(item => {
               if (item.toShow(d)) {
@@ -715,7 +769,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     recenterView: () => recenterView(),
     refresh: () => {
       setRefreshTrigger(prev => prev + 1);
-      state = undefined;
+      stateRef.current = undefined;
     },
     getRoot: () => varData,
     getData: () => varData,
@@ -794,8 +848,6 @@ function addRoot(df: UnrootedNode[], rootLeft: UnrootedNode, rootRight: Unrooted
 
     //remove current from parent's children, add parent to current's children
     while (parent && parent != current) { // second condition to prevent infinite loop when double rerooting
-      console.log("swapping parent and child", current, parent)
-
       parent.children = parent.children.filter(child => child !== current);
       parent.parentId = current.thisId;
       current.children.push(parent);

@@ -49,6 +49,34 @@ export function highlightDescendantsRadial(node: RadialNode, active: boolean, li
   }
 }
 
+export function colorDescendantsRadial(node: RadialNode, active: boolean, linksVariable: boolean, svg: d3.Selection<SVGGElement, unknown, null, undefined>, innerRadius: number, color: string): void {
+  const bbox = getBoundingBox(node, linksVariable);
+
+  //remove existing color box
+  svg.selectAll(`.color-box-${node.data.name}`).remove();
+
+  if (active) {
+    // Create color box
+    let colorGroup: d3.Selection<SVGGElement, unknown, null, undefined> = svg.select('g.color-boxes');
+    if (colorGroup.empty()) {
+      colorGroup = svg.insert('g', ':first-child')
+        .attr('class', 'color-boxes')
+        .style('isolation', 'isolate')
+        .lower();
+    }
+
+    colorGroup.append('path')
+      .attr('class', `color-box color-box-${node.data.name}`)
+      .attr('d', d3.arc()({
+        innerRadius: bbox.minY,
+        outerRadius: innerRadius + 170,
+        startAngle: (bbox.minX) * (Math.PI / 180), // Angle in radians
+        endAngle: (bbox.maxX) * (Math.PI / 180)
+      }))
+      .style('fill', color);
+  }
+}
+
 function mapChildren(node: RadialNode, callback: (node: RadialNode) => void): void {
   if (node.children) {
     node.children.forEach(child => {
@@ -181,7 +209,7 @@ export function reroot(node: RadialNode, data: RadialNode): RadialNode {
             currentNode = parentNode;
             parentNode = parentNode.parent || null;
           }
-          
+
           return tree(d3.hierarchy<D3Node>(radialToD3Node(newRoot))) as RadialNode;
         }
       }
@@ -214,7 +242,7 @@ export function findAndZoom(name: string, svg: d3.Selection<SVGSVGElement, unkno
     const cartY = distance * Math.sin(x);
 
     const centerOffsetX = container.current.clientWidth / 2;
-    const centerOffsetY = container.current.clientHeight / 2; 
+    const centerOffsetY = container.current.clientHeight / 2;
 
     const zoom = d3.zoom().on("zoom", (event) => {
       svg.select("g").attr("transform", event.transform);

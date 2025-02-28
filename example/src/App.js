@@ -106,7 +106,7 @@ function App() {
         <button onClick={() => { radialRef.current.findAndReroot("Node11") }}>
           findAndReroot
         </button>
-        <button onClick={() => { console.log(radialRef.current.getState()) }}>
+        <button onClick={() => { console.log(unrootedRef.current.getState()) }}>
           print state
         </button>
       </div>

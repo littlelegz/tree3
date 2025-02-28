@@ -715,7 +715,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     recenterView: () => recenterView(),
     refresh: () => {
       setRefreshTrigger(prev => prev + 1);
-      state = undefined;
+      stateRef.current = undefined;
     },
     getRoot: () => varData,
     getData: () => varData,

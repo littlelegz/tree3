@@ -55,7 +55,6 @@ export function highlightClade(node: UnrootedNode, active: boolean, svg: d3.Sele
     coords.forEach(coord => {
       path += ` L ${coord.x} ${coord.y}`;
     });
-
     path += ` L ${nodeX} ${nodeY}`;
 
     return path;
@@ -69,10 +68,51 @@ export function highlightClade(node: UnrootedNode, active: boolean, svg: d3.Sele
     const nodeX = node.x * scale;
     const nodeY = node.y * scale;
 
-    const highlight = svg.insert('path', ':first-child')
+    svg.insert('path', ':first-child')
       .attr('class', 'highlight-box')
       .attr('d', complexPath(childrenCoords, nodeX, nodeY))
       .style('fill', 'rgba(255, 255, 0, 0.2)')
+      .style('stroke', 'none');
+  }
+}
+
+export function colorClade(node: UnrootedNode, active: boolean, svg: d3.Selection<SVGGElement, unknown, null, undefined>, scale: number, color: string): void {
+  if (node.isTip) return;
+
+  // Get array of all coordinates of children
+  const childrenCoords = getAllLeafCoords(node, scale);
+
+  const complexPath = (coords: Array<{ x: number, y: number }>, nodeX: number, nodeY: number): string => {
+    let path = `M ${nodeX} ${nodeY}`;
+
+    coords.forEach(coord => {
+      path += ` L ${coord.x} ${coord.y}`;
+    });
+    path += ` L ${nodeX} ${nodeY}`;
+
+    return path;
+  };
+
+  // Remove existing highlight
+  svg.selectAll(`.color-box-${node.data.name}`).remove();
+
+  if (active) {
+    // Node center point
+    const nodeX = node.x * scale;
+    const nodeY = node.y * scale;
+
+    let colorGroup: d3.Selection<SVGGElement, unknown, null, undefined> = svg.select('g.color-boxes');
+    if (colorGroup.empty()) {
+      colorGroup = svg.insert('g', ':first-child')
+        .attr('class', 'color-boxes')
+        .style('isolation', 'isolate')
+        .lower();
+    }
+
+    colorGroup.append('path')
+      .attr('class', `color-box color-box-${node.data.name}`)
+      .attr('d', complexPath(childrenCoords, nodeX, nodeY))
+      .style('fill', color)
       .style('stroke', 'none');
   }
 }

@@ -6712,7 +6712,7 @@ var UnrootedTree = forwardRef(function (_a, ref) {
         recenterView: function () { return recenterView(); },
         refresh: function () {
             setRefreshTrigger(function (prev) { return prev + 1; });
-            state = undefined;
+            stateRef.current = undefined;
         },
         getRoot: function () { return varData; },
         getData: function () { return varData; },

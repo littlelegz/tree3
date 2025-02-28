@@ -13,10 +13,12 @@ import {
 } from './radialUtils.ts';
 import {
   highlightDescendantsRect,
-  findAndZoom
+  findAndZoom,
+  colorDescendantsRect,
 } from './rectUtils.ts';
 import '../css/tree3.css';
 import '../css/menu.css';
+import BasicColorPicker from './colorPicker.tsx';
 
 export interface RectTreeRef {
   getLinkExtensions: () => d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown> | null;
@@ -69,6 +71,7 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
   const [varData, setVarData] = useState<RadialNode | null>(null);
   const initialStateApplied = useRef(false);
   const stateRef = useRef(state);
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
 
   useEffect(() => {
     stateRef.current = state;
@@ -435,6 +438,7 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
     function nodeClicked(event: MouseEvent, d: RadialNode): void {
       d3.selectAll('.tooltip-node').remove();
 
+      // This renders a menu for node options
       const menu = d3.select(containerRef.current)
         .append('div')
         .attr('class', 'menu-node')
@@ -463,6 +467,40 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
               Path to Root
             </a>
             <div className="dropdown-divider" />
+            <a
+              className="dropdown-item"
+              onClick={(e) => {
+                e.preventDefault();
+                const target = e.currentTarget;
+                const picker = target.querySelector('div');
+                if (!picker) return;
+
+                // Toggle visibility of this picker
+                picker.style.display = picker.style.display == "none" ? "block" : "none";
+              }}
+            >
+              Highlight Clade
+              <div
+                style={{
+                  position: 'absolute',
+                  left: `150px`,
+                  top: `180px`,
+                  display: 'none',
+                }}
+              >
+                <BasicColorPicker
+                  onClose={() => { }}
+                  onChange={(color) => {
+                    console.log(color);
+                    if (color.hex === null) {
+                      colorDescendantsRect(d, false, variableLinksRef.current, svg, varData?.leaves()[0].y ?? 0, "");
+                    } else {
+                      colorDescendantsRect(d, true, variableLinksRef.current, svg, varData?.leaves()[0].y ?? 0, color.hex);
+                    }
+                  }}
+                />
+              </div>
+            </a>
             <a className="dropdown-item" onClick={() => {
               if (varData) {
                 setVarData(reroot(d, varData));
@@ -482,6 +520,7 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
                 );
               }
             })}
+
           </div>
         </>
       );
