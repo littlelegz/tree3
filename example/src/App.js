@@ -55,14 +55,14 @@ function App() {
           <RadialTree
             data={tree}
             ref={radialRef}
-            state={{ root: "Node11" }}
+            state={{ root: "Node15", colorDict: { "Node15": "#FF9999" } }}
           />
         </div>
         <div ref={rectContainerRef} style={{ width: "33%", height: "500px", border: "1px solid black", overflow: "hidden" }}>
           <RectTree
             data={tree}
             ref={rectRef}
-            state={{ root: "Node11" }}
+            state={{ root: "Node74", colorDict: { "Node15": "#FF9999" } }}
           />
         </div>
         <div ref={unrootedContainerRef} style={{ width: "33%", height: "500px", border: "1px solid black", overflow: "hidden" }}>
@@ -71,7 +71,7 @@ function App() {
             ref={unrootedRef}
             onNodeClick={(ev, node) => console.log(node)}
             homeNode={"bilR"}
-            state={{ root: "Node74" }}
+            state={{ root: "Node74", colorDict: { "Node15": "#FF9999" } }}
           />
         </div>
       </div>

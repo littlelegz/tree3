@@ -51,7 +51,6 @@ export function highlightDescendantsRadial(node: RadialNode, active: boolean, li
 
 export function colorDescendantsRadial(node: RadialNode, active: boolean, linksVariable: boolean, svg: d3.Selection<SVGGElement, unknown, null, undefined>, innerRadius: number, color: string): void {
   const bbox = getBoundingBox(node, linksVariable);
-
   //remove existing color box
   svg.selectAll(`.color-box-${node.data.name}`).remove();
 
@@ -73,7 +72,8 @@ export function colorDescendantsRadial(node: RadialNode, active: boolean, linksV
         startAngle: (bbox.minX) * (Math.PI / 180), // Angle in radians
         endAngle: (bbox.maxX) * (Math.PI / 180)
       }))
-      .style('fill', color);
+      .style('fill', color)
+      .style('composite-operation', 'source-over');
   }
 }
 

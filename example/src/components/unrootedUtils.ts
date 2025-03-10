@@ -113,7 +113,8 @@ export function colorClade(node: UnrootedNode, active: boolean, svg: d3.Selectio
       .attr('class', `color-box color-box-${node.data.name}`)
       .attr('d', complexPath(childrenCoords, nodeX, nodeY))
       .style('fill', color)
-      .style('stroke', 'none');
+      .style('stroke', 'none')
+      .style('composite-operation', 'source-over');
   }
 }
 

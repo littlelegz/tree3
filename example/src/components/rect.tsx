@@ -494,8 +494,10 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
                     console.log(color);
                     if (color.hex === null) {
                       colorDescendantsRect(d, false, variableLinksRef.current, svg, varData?.leaves()[0].y ?? 0, "");
+                      addColorState(d.data.name, "", true);
                     } else {
                       colorDescendantsRect(d, true, variableLinksRef.current, svg, varData?.leaves()[0].y ?? 0, color.hex);
+                      addColorState(d.data.name, color.hex);
                     }
                   }}
                 />
@@ -504,7 +506,7 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
             <a className="dropdown-item" onClick={() => {
               if (varData) {
                 setVarData(reroot(d, varData));
-                stateRef.current = { root: d.data.name };
+                addRootState(d.data.name);
               }
             }}>
               Reroot Here
@@ -598,6 +600,14 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
     }
   }, [varData, state]);
 
+  useEffect(() => { // Whenever varData is updated, attempt to apply state colors
+    if (varData && stateRef.current && stateRef.current.colorDict) {
+      for (const [name, color] of Object.entries(stateRef.current.colorDict)) {
+        findAndColor(name, color);
+      }
+    }
+  }, [varData]);
+
   useEffect(() => { // Transition between variable and constant links, and tip alignment
     const t = d3.transition().duration(750);
     if (!tipAlign) {
@@ -667,6 +677,49 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
     }
   };
 
+  const findAndColor = (name: string, color: string) => {
+    if (varData) {
+      const findNode = (node: RadialNode): RadialNode | null => {
+        if (node.data.name === name) {
+          return node;
+        }
+        if (node.children) {
+          for (const child of node.children) {
+            const found = findNode(child);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+
+      const targetNode = findNode(varData);
+      if (targetNode && svgRef.current) {
+        colorDescendantsRect(targetNode, true, variableLinksRef.current, d3.select(svgRef.current).select('g'), varData.leaves()[0].y ?? 0, color);
+      }
+    }
+  };
+
+  const addColorState = (name: string, color: string, remove = false) => {
+    if (remove) {
+      if (stateRef.current && stateRef.current.colorDict) {
+        delete stateRef.current.colorDict[name];
+      }
+    } else if (stateRef.current) {
+      stateRef.current.colorDict = stateRef.current.colorDict || {};
+      stateRef.current.colorDict[name] = color;
+    } else {
+      stateRef.current = { colorDict: { [name]: color } };
+    }
+  };
+
+  const addRootState = (name: string) => {
+    if (stateRef.current) {
+      stateRef.current.root = name;
+    } else {
+      stateRef.current = { root: name };
+    }
+  }
+
   useImperativeHandle(ref, () => ({
     getLinkExtensions: () => linkExtensionRef.current,
     getLinks: () => linkRef.current,
@@ -678,7 +731,7 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
     recenterView: () => recenterView(),
     refresh: () => {
       setRefreshTrigger(prev => prev + 1);
-      stateRef.current = undefined;
+      stateRef.current = {};
     },
     getRoot: () => varData,
     getContainer: () => containerRef.current,

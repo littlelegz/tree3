@@ -230,7 +230,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
             <a className="dropdown-item" onClick={() => {
               if (varData) {
                 rootOnBranch(d);
-                stateRef.current = { root: d.target.thisName };
+                addRootState(d.target.thisName);
               }
             }}>
               Root Here
@@ -545,26 +545,10 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
                   onChange={(color) => {
                     if (color.hex === null) {
                       colorClade(d, false, svg, scale, "");
-                      if (stateRef.current && stateRef.current.colorDict) {
-                        const newColorDict = { ...stateRef.current.colorDict };
-                        delete newColorDict[d.data.name];
-                        stateRef.current = {
-                          ...stateRef.current,
-                          colorDict: newColorDict
-                        };
-                      }
+                      addColorState(d.data.name, "", true);
                     } else {
                       colorClade(d, true, svg, scale, color.hex);
-                      if (!stateRef.current) {
-                        stateRef.current = { colorDict: {} };
-                      }
-                      stateRef.current = {
-                        ...stateRef.current,
-                        colorDict: {
-                          ...(stateRef.current.colorDict || {}),
-                          [d.data.name]: color.hex
-                        }
-                      };
+                      addColorState(d.data.name, color.hex);
                     }
                   }}
                 />
@@ -683,6 +667,14 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     }
   }, [varData, state]);
 
+  useEffect(() => { // Whenever varData is updated, attempt to apply state colors
+    if (varData && stateRef.current && stateRef.current.colorDict) {
+      for (const [name, color] of Object.entries(stateRef.current.colorDict)) {
+        findAndColor(name, color);
+      }
+    }
+  }, [varData]);
+
   useEffect(() => { // Toggle leaf label visibility
     leafLabelsRef.current?.style("display", displayLeaves ? "block" : "none");
     linkExtensionRef.current?.style("display", displayLeaves ? "block" : "none");
@@ -759,6 +751,46 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
       }
     }
   };
+
+  const findAndColor = (name: string, color: string) => {
+    if (varData) {
+      const findNode = (nodes: UnrootedNode[]): UnrootedNode | null => {
+        for (const node of nodes) {
+          if (node.thisName === name) {
+            return node;
+          }
+        }
+        return null;
+      };
+
+      // Find node and reroot if found
+      const targetNode = findNode(varData.data);
+      if (targetNode && svgRef.current) {
+        colorClade(targetNode, true, d3.select(svgRef.current).select('g'), scale, color);
+      }
+    }
+  };
+
+  const addColorState = (name: string, color: string, remove = false) => {
+    if (remove) {
+      if (stateRef.current && stateRef.current.colorDict) {
+        delete stateRef.current.colorDict[name];
+      }
+    } else if (stateRef.current) {
+      stateRef.current.colorDict = stateRef.current.colorDict || {};
+      stateRef.current.colorDict[name] = color;
+    } else {
+      stateRef.current = { colorDict: { [name]: color } };
+    }
+  };
+
+  const addRootState = (name: string) => {
+    if (stateRef.current) {
+      stateRef.current.root = name;
+    } else {
+      stateRef.current = { root: name };
+    }
+  }
 
   useImperativeHandle(ref, () => ({
     getLinkExtensions: () => linkExtensionRef.current,

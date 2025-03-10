@@ -62,7 +62,8 @@ export function colorDescendantsRect(node: RadialNode, active: boolean, linksVar
             L ${innerRadius + 170} ${bbox.maxX} 
             L ${bbox.minY} ${bbox.maxX} 
             Z`)
-      .style('fill', color);
+      .style('fill', color)
+      .style('composite-operation', 'source-over');
   }
 }
 

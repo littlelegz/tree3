@@ -11,10 +11,12 @@ import {
   toggleHighlightDescendantLinks,
   toggleHighlightTerminalLinks,
   toggleCollapseClade,
-  findAndZoom
+  findAndZoom,
+  colorClade
 } from './unrootedUtils.ts';
 import '../css/tree3.css';
 import '../css/menu.css';
+import BasicColorPicker from './colorPicker.tsx';
 
 export interface UnrootedTreeRef {
   getLinkExtensions: () => d3.Selection<SVGPathElement, Link<UnrootedNode>, SVGGElement, unknown> | null;
@@ -228,7 +230,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
             <a className="dropdown-item" onClick={() => {
               if (varData) {
                 rootOnBranch(d);
-                stateRef.current = { root: d.target.thisName };
+                addRootState(d.target.thisName);
               }
             }}>
               Root Here
@@ -517,6 +519,42 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
               Terminal Links
             </a>
             <div className="dropdown-divider" />
+            <a
+              className="dropdown-item"
+              onClick={(e) => {
+                e.preventDefault();
+                const target = e.currentTarget;
+                const picker = target.querySelector('div');
+                if (!picker) return;
+
+                // Toggle visibility of this picker
+                picker.style.display = picker.style.display == "none" ? "block" : "none";
+              }}
+            >
+              Highlight Clade
+              <div
+                style={{
+                  position: 'absolute',
+                  left: `150px`,
+                  top: `180px`,
+                  display: 'none',
+                }}
+              >
+                <BasicColorPicker
+                  onClose={() => { }}
+                  onChange={(color) => {
+                    if (color.hex === null) {
+                      colorClade(d, false, svg, scale, "");
+                      addColorState(d.data.name, "", true);
+                    } else {
+                      colorClade(d, true, svg, scale, color.hex);
+                      addColorState(d.data.name, color.hex);
+                    }
+                  }}
+                />
+              </div>
+            </a>
+            <div className="dropdown-divider" />
             {/* Custom menu items */}
             {customNodeMenuItems?.map(item => {
               if (item.toShow(d)) {
@@ -629,6 +667,14 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     }
   }, [varData, state]);
 
+  useEffect(() => { // Whenever varData is updated, attempt to apply state colors
+    if (varData && stateRef.current && stateRef.current.colorDict) {
+      for (const [name, color] of Object.entries(stateRef.current.colorDict)) {
+        findAndColor(name, color);
+      }
+    }
+  }, [varData]);
+
   useEffect(() => { // Toggle leaf label visibility
     leafLabelsRef.current?.style("display", displayLeaves ? "block" : "none");
     linkExtensionRef.current?.style("display", displayLeaves ? "block" : "none");
@@ -705,6 +751,46 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
       }
     }
   };
+
+  const findAndColor = (name: string, color: string) => {
+    if (varData) {
+      const findNode = (nodes: UnrootedNode[]): UnrootedNode | null => {
+        for (const node of nodes) {
+          if (node.thisName === name) {
+            return node;
+          }
+        }
+        return null;
+      };
+
+      // Find node and reroot if found
+      const targetNode = findNode(varData.data);
+      if (targetNode && svgRef.current) {
+        colorClade(targetNode, true, d3.select(svgRef.current).select('g'), scale, color);
+      }
+    }
+  };
+
+  const addColorState = (name: string, color: string, remove = false) => {
+    if (remove) {
+      if (stateRef.current && stateRef.current.colorDict) {
+        delete stateRef.current.colorDict[name];
+      }
+    } else if (stateRef.current) {
+      stateRef.current.colorDict = stateRef.current.colorDict || {};
+      stateRef.current.colorDict[name] = color;
+    } else {
+      stateRef.current = { colorDict: { [name]: color } };
+    }
+  };
+
+  const addRootState = (name: string) => {
+    if (stateRef.current) {
+      stateRef.current.root = name;
+    } else {
+      stateRef.current = { root: name };
+    }
+  }
 
   useImperativeHandle(ref, () => ({
     getLinkExtensions: () => linkExtensionRef.current,
@@ -794,8 +880,6 @@ function addRoot(df: UnrootedNode[], rootLeft: UnrootedNode, rootRight: Unrooted
 
     //remove current from parent's children, add parent to current's children
     while (parent && parent != current) { // second condition to prevent infinite loop when double rerooting
-      console.log("swapping parent and child", current, parent)
-
       parent.children = parent.children.filter(child => child !== current);
       parent.parentId = current.thisId;
       current.children.push(parent);

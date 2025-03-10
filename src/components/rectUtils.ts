@@ -35,8 +35,35 @@ export function highlightDescendantsRect(node: RadialNode, active: boolean, link
                 L ${innerRadius + 170} ${bbox.maxX} 
                 L ${bbox.minY} ${bbox.maxX} 
                 Z`)
-      .style('fill', 'rgba(255, 255, 0, 0.2)')
-      .style('stroke', 'rgba(255, 255, 0, 0.8)');
+      .style('fill', 'rgba(255, 255, 0, 0.2)');
+  }
+}
+
+export function colorDescendantsRect(node: RadialNode, active: boolean, linksVariable: boolean, svg: d3.Selection<SVGGElement, unknown, null, undefined>, innerRadius: number, color: string): void {
+  const bbox = getBoundingBox(node, linksVariable);
+
+  //remove existing color box
+  svg.selectAll(`.color-box-${node.data.name}`).remove();
+
+  if (active) {
+    // Create highlight box
+    let colorGroup: d3.Selection<SVGGElement, unknown, null, undefined> = svg.select('g.color-boxes');
+    if (colorGroup.empty()) {
+      colorGroup = svg.insert('g', ':first-child')
+        .attr('class', 'color-boxes')
+        .style('isolation', 'isolate')
+        .lower();
+    }
+
+    colorGroup.append('path')
+      .attr('class', `color-box color-box-${node.data.name}`)
+      .attr('d', `M ${bbox.minY} ${bbox.minX} 
+            L ${innerRadius + 170} ${bbox.minX} 
+            L ${innerRadius + 170} ${bbox.maxX} 
+            L ${bbox.minY} ${bbox.maxX} 
+            Z`)
+      .style('fill', color)
+      .style('composite-operation', 'source-over');
   }
 }
 
