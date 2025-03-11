@@ -1,4 +1,4 @@
-import React, { forwardRef, useState, useRef, useEffect, useImperativeHandle } from 'react';
+import React$1, { forwardRef, useState, useRef, useEffect, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
 
 function max$1(values, valueof) {
@@ -4468,6 +4468,32 @@ function highlightDescendantsRadial(node, active, linksVariable, svg, innerRadiu
             .style('stroke', 'none');
     }
 }
+function colorDescendantsRadial(node, active, linksVariable, svg, innerRadius, color) {
+    var bbox = getBoundingBox$1(node, linksVariable);
+    console.log("coloring", node.data.name, color);
+    //remove existing color box
+    svg.selectAll(".color-box-".concat(node.data.name)).remove();
+    if (active) {
+        // Create color box
+        var colorGroup = svg.select('g.color-boxes');
+        if (colorGroup.empty()) {
+            colorGroup = svg.insert('g', ':first-child')
+                .attr('class', 'color-boxes')
+                .style('isolation', 'isolate')
+                .lower();
+        }
+        colorGroup.append('path')
+            .attr('class', "color-box color-box-".concat(node.data.name))
+            .attr('d', arc()({
+            innerRadius: bbox.minY,
+            outerRadius: innerRadius + 170,
+            startAngle: (bbox.minX) * (Math.PI / 180), // Angle in radians
+            endAngle: (bbox.maxX) * (Math.PI / 180)
+        }))
+            .style('fill', color)
+            .style('composite-operation', 'source-over');
+    }
+}
 function mapChildren$1(node, callback) {
     if (node.children) {
         node.children.forEach(function (child) {
@@ -4727,8 +4753,27 @@ function highlightDescendantsRect(node, active, linksVariable, svg, innerRadius)
         svg.insert('path', ':first-child')
             .attr('class', 'highlight-box')
             .attr('d', "M ".concat(bbox.minY, " ").concat(bbox.minX, " \n                L ").concat(innerRadius + 170, " ").concat(bbox.minX, " \n                L ").concat(innerRadius + 170, " ").concat(bbox.maxX, " \n                L ").concat(bbox.minY, " ").concat(bbox.maxX, " \n                Z"))
-            .style('fill', 'rgba(255, 255, 0, 0.2)')
-            .style('stroke', 'rgba(255, 255, 0, 0.8)');
+            .style('fill', 'rgba(255, 255, 0, 0.2)');
+    }
+}
+function colorDescendantsRect(node, active, linksVariable, svg, innerRadius, color) {
+    var bbox = getBoundingBox(node, linksVariable);
+    //remove existing color box
+    svg.selectAll(".color-box-".concat(node.data.name)).remove();
+    if (active) {
+        // Create highlight box
+        var colorGroup = svg.select('g.color-boxes');
+        if (colorGroup.empty()) {
+            colorGroup = svg.insert('g', ':first-child')
+                .attr('class', 'color-boxes')
+                .style('isolation', 'isolate')
+                .lower();
+        }
+        colorGroup.append('path')
+            .attr('class', "color-box color-box-".concat(node.data.name))
+            .attr('d', "M ".concat(bbox.minY, " ").concat(bbox.minX, " \n            L ").concat(innerRadius + 170, " ").concat(bbox.minX, " \n            L ").concat(innerRadius + 170, " ").concat(bbox.maxX, " \n            L ").concat(bbox.minY, " ").concat(bbox.maxX, " \n            Z"))
+            .style('fill', color)
+            .style('composite-operation', 'source-over');
     }
 }
 function findAndZoom$1(name, svg, container, variable) {
@@ -4876,6 +4921,41 @@ styleInject(css_248z$1);
 var css_248z = ".dropdown-menu {\r\n  position: absolute;\r\n  top: 100%;\r\n  left: 0;\r\n  z-index: 1000;\r\n  display: none;\r\n  float: left;\r\n  min-width: 10rem;\r\n  padding: 0.5rem 0;\r\n  margin: 0.125rem 0 0;\r\n  font-size: 1rem;\r\n  color: #777;\r\n  text-align: left;\r\n  list-style: none;\r\n  background-color: #fff;\r\n  background-clip: padding-box;\r\n  border: 1px solid rgba(0, 0, 0, 0.15);\r\n  border-radius: 0.25rem;\r\n}\r\n\r\n.dropdown-item {\r\n  display: block;\r\n  padding: 0.25rem 1rem;\r\n  clear: both;\r\n  font-weight: 400;\r\n  color: #2d2d2d;\r\n  text-align: inherit;\r\n  white-space: nowrap;\r\n  background-color: transparent;\r\n  border: 0;\r\n  -webkit-tap-highlight-color: transparent;\r\n}\r\n\r\n.dropdown-item:hover {\r\n  color: #fff;\r\n  background-color: #007bff;\r\n  text-decoration: none;\r\n}\r\n\r\n.dropdown-divider {\r\n  height: 0;\r\n  margin: 0.25rem 0;\r\n  overflow: hidden;\r\n  border-top: 1px solid #eee;\r\n}\r\n\r\n.dropdown-header {\r\n  display: block;\r\n  padding: 0.25rem .5rem;\r\n  margin-bottom: 0;\r\n  font-size: 0.875rem;\r\n  color: #777;\r\n  white-space: nowrap;\r\n  margin-top: 0;\r\n  font-weight: 400;\r\n}\r\n\r\n.menu-header {\r\n  font-weight: bold;\r\n  padding: 0rem .5rem;\r\n}";
 styleInject(css_248z);
 
+var BasicColorPicker = function (_a) {
+    var onChange = _a.onChange; _a.onClose;
+    var colors = [
+        '#FF9999', '#99FF99', '#9999FF', // Lighter red, green, blue
+        '#FFFF99', '#FF99FF', '#99FFFF', // Lighter yellow, magenta, cyan
+        '#FFB366', '#B3FF66', '#66B3FF', // Muted orange, lime, sky blue
+        '#B366FF', '#66FFB3', "#FFFFFF" // Soft pink, purple, mint
+    ];
+    return (React.createElement("div", { style: {
+            position: 'absolute',
+            background: 'white',
+            padding: '10px',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '5px',
+        } }, colors.map(function (color, index) { return (React.createElement("button", { key: index, style: {
+            width: '30px',
+            height: '30px',
+            background: color,
+            border: '1px solid #ddd',
+            borderRadius: '4px',
+            cursor: 'pointer'
+        }, onClick: function () {
+            if (color === "#FFFFFF") {
+                onChange({ hex: null });
+            }
+            else {
+                onChange({ hex: color });
+            }
+        } })); })));
+};
+
 var RectTree = forwardRef(function (_a, ref) {
     var data = _a.data, _b = _a.width, width = _b === void 0 ? 1000 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, customLinkMenuItems = _a.customLinkMenuItems, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler, homeNode = _a.homeNode, state = _a.state;
     var _c = useState(false), variableLinks = _c[0], setVariableLinks = _c[1];
@@ -4891,7 +4971,6 @@ var RectTree = forwardRef(function (_a, ref) {
     var variableLinksRef = useRef(false); // Using this ref so highlighting descendants updates correctly
     var _f = useState(0), refreshTrigger = _f[0], setRefreshTrigger = _f[1];
     var _g = useState(null), varData = _g[0], setVarData = _g[1];
-    var initialStateApplied = useRef(false);
     var stateRef = useRef(state);
     useEffect(function () {
         stateRef.current = state;
@@ -4949,7 +5028,7 @@ var RectTree = forwardRef(function (_a, ref) {
             return;
         // Zoom behavior
         var zoom$1 = zoom()
-            .scaleExtent([0.5, 5])
+            .scaleExtent([0.1, 20])
             .on('zoom', function (event) {
             svgMain.select("g").attr('transform', event.transform);
         });
@@ -4958,7 +5037,6 @@ var RectTree = forwardRef(function (_a, ref) {
         // Setup SVG
         var svgMain = select(containerRef.current)
             .append("svg")
-            //.attr("viewBox", [0, 0, width, width])
             .attr("width", "100%") // Set width to 100%
             .attr("height", "100%") // Set height to 100%
             .attr("font-family", "sans-serif")
@@ -4970,9 +5048,7 @@ var RectTree = forwardRef(function (_a, ref) {
         var cluster$1 = cluster()
             .nodeSize([10, 20])
             .separation(function (a, b) { return 2; }); // Equal separation between nodes
-        // Generate tree layout
         cluster$1(varData);
-        // get the width of tree, find first leaf node, and get x value=
         setRadius(varData, 0, ((_a = varData.leaves()[0].y) !== null && _a !== void 0 ? _a : 0) / maxLength(varData));
         // Link functions
         function linkhovered(active) {
@@ -5001,16 +5077,16 @@ var RectTree = forwardRef(function (_a, ref) {
                 .style('top', "".concat(event.clientY - 10, "px"))
                 .style('opacity', 1)
                 .node();
-            var MenuContent = (React.createElement(React.Fragment, null,
-                React.createElement("div", { className: "menu-header" },
+            var MenuContent = (React$1.createElement(React$1.Fragment, null,
+                React$1.createElement("div", { className: "menu-header" },
                     d.source.data.name,
                     "-",
                     d.target.data.name),
-                React.createElement("div", { className: "menu-buttons" },
-                    React.createElement("div", { className: "dropdown-divider" }), customLinkMenuItems === null || customLinkMenuItems === void 0 ? void 0 :
+                React$1.createElement("div", { className: "menu-buttons" },
+                    React$1.createElement("div", { className: "dropdown-divider" }), customLinkMenuItems === null || customLinkMenuItems === void 0 ? void 0 :
                     customLinkMenuItems.map(function (item) {
                         if (item.toShow(d.source, d.target)) {
-                            return (React.createElement("a", { className: "dropdown-item", onClick: function () { item.onClick(d.source, d.target); menu === null || menu === void 0 ? void 0 : menu.remove(); } }, item.label(d.source, d.target)));
+                            return (React$1.createElement("a", { className: "dropdown-item", onClick: function () { item.onClick(d.source, d.target); menu === null || menu === void 0 ? void 0 : menu.remove(); } }, item.label(d.source, d.target)));
                         }
                     }))));
             if (menu) {
@@ -5098,15 +5174,15 @@ var RectTree = forwardRef(function (_a, ref) {
                 .style('top', "".concat(event.clientY - 10, "px"))
                 .style('opacity', 1)
                 .node();
-            var MenuContent = (React.createElement(React.Fragment, null,
-                React.createElement("div", { className: "menu-header" }, d.data.name),
-                React.createElement("div", { className: "menu-buttons" },
-                    React.createElement("div", { className: "dropdown-header" }, "Toggle Selections"),
-                    React.createElement("a", { className: "dropdown-item", onClick: function () { return toggleHighlightLinkToRoot(d); } }, "Path to Root"),
-                    React.createElement("div", { className: "dropdown-divider" }), customLeafMenuItems === null || customLeafMenuItems === void 0 ? void 0 :
+            var MenuContent = (React$1.createElement(React$1.Fragment, null,
+                React$1.createElement("div", { className: "menu-header" }, d.data.name),
+                React$1.createElement("div", { className: "menu-buttons" },
+                    React$1.createElement("div", { className: "dropdown-header" }, "Toggle Selections"),
+                    React$1.createElement("a", { className: "dropdown-item", onClick: function () { return toggleHighlightLinkToRoot(d); } }, "Path to Root"),
+                    React$1.createElement("div", { className: "dropdown-divider" }), customLeafMenuItems === null || customLeafMenuItems === void 0 ? void 0 :
                     customLeafMenuItems.map(function (item) {
                         if (item.toShow(d)) {
-                            return (React.createElement("a", { className: "dropdown-item", onClick: function () { item.onClick(d); menu === null || menu === void 0 ? void 0 : menu.remove(); } }, item.label(d)));
+                            return (React$1.createElement("a", { className: "dropdown-item", onClick: function () { item.onClick(d); menu === null || menu === void 0 ? void 0 : menu.remove(); } }, item.label(d)));
                         }
                     }))));
             if (menu) {
@@ -5204,6 +5280,7 @@ var RectTree = forwardRef(function (_a, ref) {
         }
         function nodeClicked(event, d) {
             selectAll('.tooltip-node').remove();
+            // This renders a menu for node options
             var menu = select(containerRef.current)
                 .append('div')
                 .attr('class', 'menu-node')
@@ -5212,26 +5289,53 @@ var RectTree = forwardRef(function (_a, ref) {
                 .style('top', "".concat(event.clientY - 10, "px"))
                 .style('opacity', 1)
                 .node();
-            var MenuContent = (React.createElement(React.Fragment, null,
-                React.createElement("div", { className: "menu-header" }, d.data.name),
-                React.createElement("div", { className: "menu-buttons" },
-                    React.createElement("a", { className: "dropdown-item", onClick: function () { return toggleCollapseClade$1(d); } }, "Collapse Clade"),
-                    React.createElement("div", { className: "dropdown-divider" }),
-                    React.createElement("div", { className: "dropdown-header" }, "Toggle Selections"),
-                    React.createElement("a", { className: "dropdown-item", onClick: function () { return toggleHighlightDescendantLinks$1(d); } }, "Descendant Links"),
-                    React.createElement("a", { className: "dropdown-item", onClick: function () { return toggleHighlightTerminalLinks$1(d); } }, "Terminal Links"),
-                    React.createElement("a", { className: "dropdown-item", onClick: function () { return toggleHighlightLinkToRoot(d); } }, "Path to Root"),
-                    React.createElement("div", { className: "dropdown-divider" }),
-                    React.createElement("a", { className: "dropdown-item", onClick: function () {
+            var MenuContent = (React$1.createElement(React$1.Fragment, null,
+                React$1.createElement("div", { className: "menu-header" }, d.data.name),
+                React$1.createElement("div", { className: "menu-buttons" },
+                    React$1.createElement("a", { className: "dropdown-item", onClick: function () { return toggleCollapseClade$1(d); } }, "Collapse Clade"),
+                    React$1.createElement("div", { className: "dropdown-divider" }),
+                    React$1.createElement("div", { className: "dropdown-header" }, "Toggle Selections"),
+                    React$1.createElement("a", { className: "dropdown-item", onClick: function () { return toggleHighlightDescendantLinks$1(d); } }, "Descendant Links"),
+                    React$1.createElement("a", { className: "dropdown-item", onClick: function () { return toggleHighlightTerminalLinks$1(d); } }, "Terminal Links"),
+                    React$1.createElement("a", { className: "dropdown-item", onClick: function () { return toggleHighlightLinkToRoot(d); } }, "Path to Root"),
+                    React$1.createElement("div", { className: "dropdown-divider" }),
+                    React$1.createElement("a", { className: "dropdown-item", onClick: function (e) {
+                            e.preventDefault();
+                            var target = e.currentTarget;
+                            var picker = target.querySelector('div');
+                            if (!picker)
+                                return;
+                            // Toggle visibility of this picker
+                            picker.style.display = picker.style.display == "none" ? "block" : "none";
+                        } },
+                        "Highlight Clade",
+                        React$1.createElement("div", { style: {
+                                position: 'absolute',
+                                left: "150px",
+                                top: "180px",
+                                display: 'none',
+                            } },
+                            React$1.createElement(BasicColorPicker, { onClose: function () { }, onChange: function (color) {
+                                    var _a, _b;
+                                    if (color.hex === null) {
+                                        colorDescendantsRect(d, false, variableLinksRef.current, svg, (_a = varData === null || varData === void 0 ? void 0 : varData.leaves()[0].y) !== null && _a !== void 0 ? _a : 0, "");
+                                        addColorState(d.data.name, "", true);
+                                    }
+                                    else {
+                                        colorDescendantsRect(d, true, variableLinksRef.current, svg, (_b = varData === null || varData === void 0 ? void 0 : varData.leaves()[0].y) !== null && _b !== void 0 ? _b : 0, color.hex);
+                                        addColorState(d.data.name, color.hex);
+                                    }
+                                } }))),
+                    React$1.createElement("a", { className: "dropdown-item", onClick: function () {
                             if (varData) {
                                 setVarData(reroot(d, varData));
-                                stateRef.current = { root: d.data.name };
+                                addRootState(d.data.name);
                             }
                         } }, "Reroot Here"),
-                    React.createElement("div", { className: "dropdown-divider" }), customNodeMenuItems === null || customNodeMenuItems === void 0 ? void 0 :
+                    React$1.createElement("div", { className: "dropdown-divider" }), customNodeMenuItems === null || customNodeMenuItems === void 0 ? void 0 :
                     customNodeMenuItems.map(function (item) {
                         if (item.toShow(d)) {
-                            return (React.createElement("a", { className: "dropdown-item", onClick: function () { item.onClick(d); menu === null || menu === void 0 ? void 0 : menu.remove(); } }, item.label(d)));
+                            return (React$1.createElement("a", { className: "dropdown-item", onClick: function () { item.onClick(d); menu === null || menu === void 0 ? void 0 : menu.remove(); } }, item.label(d)));
                         }
                     }))));
             if (menu) {
@@ -5290,14 +5394,21 @@ var RectTree = forwardRef(function (_a, ref) {
         }
     }, [varData, width]);
     useEffect(function () {
-        if (!initialStateApplied.current && state && varData) {
-            initialStateApplied.current = true;
+        if (varData) {
             // Apply root if specified
-            if (state.root) {
-                findAndReroot(state.root);
+            if (stateRef.current && stateRef.current.root) {
+                findAndReroot(stateRef.current.root);
             }
         }
-    }, [varData, state]);
+    }, [varData, stateRef.current]);
+    useEffect(function () {
+        if (varData && stateRef.current && stateRef.current.colorDict) {
+            for (var _i = 0, _a = Object.entries(stateRef.current.colorDict); _i < _a.length; _i++) {
+                var _b = _a[_i], name_1 = _b[0], color = _b[1];
+                findAndColor(name_1, color);
+            }
+        }
+    }, [varData, stateRef.current]);
     useEffect(function () {
         var _a, _b, _c, _d, _e, _f;
         var t = transition().duration(750);
@@ -5356,6 +5467,53 @@ var RectTree = forwardRef(function (_a, ref) {
             }
         }
     };
+    var findAndColor = function (name, color) {
+        var _a;
+        if (varData) {
+            var findNode_2 = function (node) {
+                if (node.data.name === name) {
+                    return node;
+                }
+                if (node.children) {
+                    for (var _i = 0, _a = node.children; _i < _a.length; _i++) {
+                        var child = _a[_i];
+                        var found = findNode_2(child);
+                        if (found)
+                            return found;
+                    }
+                }
+                return null;
+            };
+            var targetNode = findNode_2(varData);
+            if (targetNode && svgRef.current) {
+                colorDescendantsRect(targetNode, true, variableLinksRef.current, select(svgRef.current).select('g'), (_a = varData.leaves()[0].y) !== null && _a !== void 0 ? _a : 0, color);
+            }
+        }
+    };
+    var addColorState = function (name, color, remove) {
+        var _a;
+        if (remove === void 0) { remove = false; }
+        if (remove) {
+            if (stateRef.current && stateRef.current.colorDict) {
+                delete stateRef.current.colorDict[name];
+            }
+        }
+        else if (stateRef.current) {
+            stateRef.current.colorDict = stateRef.current.colorDict || {};
+            stateRef.current.colorDict[name] = color;
+        }
+        else {
+            stateRef.current = { colorDict: (_a = {}, _a[name] = color, _a) };
+        }
+    };
+    var addRootState = function (name) {
+        if (stateRef.current) {
+            stateRef.current.root = name;
+        }
+        else {
+            stateRef.current = { root: name };
+        }
+    };
     useImperativeHandle(ref, function () { return ({
         getLinkExtensions: function () { return linkExtensionRef.current; },
         getLinks: function () { return linkRef.current; },
@@ -5367,7 +5525,19 @@ var RectTree = forwardRef(function (_a, ref) {
         recenterView: function () { return recenterView(); },
         refresh: function () {
             setRefreshTrigger(function (prev) { return prev + 1; });
-            stateRef.current = undefined;
+            stateRef.current = {};
+        },
+        resetRoot: function () {
+            if (stateRef.current) {
+                delete stateRef.current.root;
+            }
+            setRefreshTrigger(function (prev) { return prev + 1; });
+        },
+        clearHighlights: function () {
+            if (stateRef.current) {
+                delete stateRef.current.colorDict;
+            }
+            setRefreshTrigger(function (prev) { return prev + 1; });
         },
         getRoot: function () { return varData; },
         getContainer: function () { return containerRef.current; },
@@ -5379,8 +5549,8 @@ var RectTree = forwardRef(function (_a, ref) {
         findAndReroot: findAndReroot,
         getState: function () { return stateRef.current; }
     }); });
-    return (React.createElement("div", { className: "radial-tree", style: { width: "100%", height: "100%" } },
-        React.createElement("div", { ref: containerRef, style: {
+    return (React$1.createElement("div", { className: "radial-tree", style: { width: "100%", height: "100%" } },
+        React$1.createElement("div", { ref: containerRef, style: {
                 width: "100%",
                 height: "100%",
                 overflow: "show"
@@ -5402,10 +5572,17 @@ var RadialTree = forwardRef(function (_a, ref) {
     var variableLinksRef = useRef(false); // Using this ref so highlighting descendants updates correctly
     var _f = useState(0), refreshTrigger = _f[0], setRefreshTrigger = _f[1];
     var _g = useState(null), varData = _g[0], setVarData = _g[1];
-    var initialStateApplied = useRef(false);
     var stateRef = useRef(state);
     var outerRadius = width / 2;
     var innerRadius = outerRadius - 170;
+    // Store the given state in a ref
+    useEffect(function () {
+        stateRef.current = state;
+    }, [state]);
+    /**
+     * The code block below reads a raw newick string and
+     * stores the tree object in varData
+     */
     useEffect(function () {
         if (!data)
             return;
@@ -5435,6 +5612,12 @@ var RadialTree = forwardRef(function (_a, ref) {
             + (endAngle === startAngle ? "" : "A" + startRadius + "," + startRadius + " 0 0 " + (endAngle > startAngle ? 1 : 0) + " " + startRadius * c1 + "," + startRadius * s1)
             + "L" + endRadius * c1 + "," + endRadius * s1;
     }
+    /**
+     * These two functions below are used to draw links between nodes
+     * in the tree. The first function is used when the links must be
+     * representative distances, whereas the second function is used
+     * when the links must be extend to reach the outer radius.
+     */
     function linkVariable(d) {
         var _a, _b, _c, _d;
         return linkStep((_a = d.source.x) !== null && _a !== void 0 ? _a : 0, (_b = d.source.radius) !== null && _b !== void 0 ? _b : 0, (_c = d.target.x) !== null && _c !== void 0 ? _c : 0, (_d = d.target.radius) !== null && _d !== void 0 ? _d : 0);
@@ -5443,6 +5626,10 @@ var RadialTree = forwardRef(function (_a, ref) {
         var _a, _b, _c, _d;
         return linkStep((_a = d.source.x) !== null && _a !== void 0 ? _a : 0, (_b = d.source.y) !== null && _b !== void 0 ? _b : 0, (_c = d.target.x) !== null && _c !== void 0 ? _c : 0, (_d = d.target.y) !== null && _d !== void 0 ? _d : 0);
     }
+    /**
+     * As with the above, these two functions are used to draw links
+     * between leaf nodes and their labels
+     */
     function linkExtensionVariable(d) {
         var _a, _b, _c;
         return linkStep((_a = d.target.x) !== null && _a !== void 0 ? _a : 0, (_b = d.target.radius) !== null && _b !== void 0 ? _b : 0, (_c = d.target.x) !== null && _c !== void 0 ? _c : 0, innerRadius);
@@ -5451,6 +5638,9 @@ var RadialTree = forwardRef(function (_a, ref) {
         var _a, _b, _c;
         return linkStep((_a = d.target.x) !== null && _a !== void 0 ? _a : 0, (_b = d.target.y) !== null && _b !== void 0 ? _b : 0, (_c = d.target.x) !== null && _c !== void 0 ? _c : 0, innerRadius);
     }
+    /**
+     * The below two functions calculate node's position
+     */
     function nodeTransformVariable(d) {
         var _a, _b;
         return "\n      rotate(".concat(((_a = d.x) !== null && _a !== void 0 ? _a : 0) - 90, ") \n      translate(").concat(d.radius || d.y, ",0)\n      ").concat(((_b = d.x) !== null && _b !== void 0 ? _b : 0) >= 180 ? "rotate(180)" : "", "\n    ");
@@ -5459,12 +5649,13 @@ var RadialTree = forwardRef(function (_a, ref) {
         var _a, _b;
         return "\n      rotate(".concat(((_a = d.x) !== null && _a !== void 0 ? _a : 0) - 90, ") \n      translate(").concat(d.y, ",0)\n      ").concat(((_b = d.x) !== null && _b !== void 0 ? _b : 0) >= 180 ? "rotate(180)" : "", "\n    ");
     }
+    // Render tree
     useEffect(function () {
         if (!containerRef.current || !varData)
             return;
         // Zoom behavior
         var zoom$1 = zoom()
-            .scaleExtent([0.5, 5]) // Min/max zoom level
+            .scaleExtent([0.1, 20]) // Min/max zoom level
             .on('zoom', function (event) {
             svgMain.select("g").attr('transform', event.transform);
         });
@@ -5472,19 +5663,18 @@ var RadialTree = forwardRef(function (_a, ref) {
         select(containerRef.current).selectAll("*").remove();
         // Make SVG element
         var svgMain = select(containerRef.current).append("svg")
-            //.attr("viewBox", [-outerRadius, -outerRadius, width, width])
             .attr("width", "100%") // Set width to 100%
             .attr("height", "100%") // Set height to 100%
             .attr("font-family", "sans-serif")
-            .attr("font-size", 5)
+            .attr("font-size", 5) // TODO: Make this a param
             .call(zoom$1);
-        var svg = svgMain.append("g")
+        var svg = svgMain.append("g") // The tree will go into this group
             .attr("class", "tree");
         var cluster$1 = cluster()
             .size([355, innerRadius]) // [angle to spread nodes, radius]
-            //.nodeSize([.7, 15]) // specifies the size of a leaf node, play around to ensure no label overlap at higher leaf counts
             .separation(function (a, b) { return 1; });
-        cluster$1(varData); // Places leaves all on same level
+        // Places leaves all on same level
+        cluster$1(varData);
         setRadius(varData, 0, innerRadius / maxLength(varData));
         // Link functions
         function linkhovered(active) {
@@ -5524,16 +5714,16 @@ var RadialTree = forwardRef(function (_a, ref) {
                 .style('top', "".concat(event.clientY - 10, "px"))
                 .style('opacity', 1)
                 .node();
-            var MenuContent = (React.createElement(React.Fragment, null,
-                React.createElement("div", { className: "menu-header" },
+            var MenuContent = (React$1.createElement(React$1.Fragment, null,
+                React$1.createElement("div", { className: "menu-header" },
                     d.source.data.name,
                     "-",
                     d.target.data.name),
-                React.createElement("div", { className: "menu-buttons" },
-                    React.createElement("div", { className: "dropdown-divider" }), customLinkMenuItems === null || customLinkMenuItems === void 0 ? void 0 :
+                React$1.createElement("div", { className: "menu-buttons" },
+                    React$1.createElement("div", { className: "dropdown-divider" }), customLinkMenuItems === null || customLinkMenuItems === void 0 ? void 0 :
                     customLinkMenuItems.map(function (item) {
                         if (item.toShow(d.source, d.target)) {
-                            return (React.createElement("a", { className: "dropdown-item", onClick: function () { item.onClick(d.source, d.target); menu === null || menu === void 0 ? void 0 : menu.remove(); } }, item.label(d.source, d.target)));
+                            return (React$1.createElement("a", { className: "dropdown-item", onClick: function () { item.onClick(d.source, d.target); menu === null || menu === void 0 ? void 0 : menu.remove(); } }, item.label(d.source, d.target)));
                         }
                     }))));
             if (menu) {
@@ -5609,15 +5799,15 @@ var RadialTree = forwardRef(function (_a, ref) {
                 .style('top', "".concat(event.clientY - 10, "px"))
                 .style('opacity', 1)
                 .node();
-            var MenuContent = (React.createElement(React.Fragment, null,
-                React.createElement("div", { className: "menu-header" }, d.data.name),
-                React.createElement("div", { className: "menu-buttons" },
-                    React.createElement("div", { className: "dropdown-header" }, "Toggle Selections"),
-                    React.createElement("a", { className: "dropdown-item", onClick: function () { return toggleHighlightLinkToRoot(d); } }, "Path to Root"),
-                    React.createElement("div", { className: "dropdown-divider" }), customLeafMenuItems === null || customLeafMenuItems === void 0 ? void 0 :
+            var MenuContent = (React$1.createElement(React$1.Fragment, null,
+                React$1.createElement("div", { className: "menu-header" }, d.data.name),
+                React$1.createElement("div", { className: "menu-buttons" },
+                    React$1.createElement("div", { className: "dropdown-header" }, "Toggle Selections"),
+                    React$1.createElement("a", { className: "dropdown-item", onClick: function () { return toggleHighlightLinkToRoot(d); } }, "Path to Root"),
+                    React$1.createElement("div", { className: "dropdown-divider" }), customLeafMenuItems === null || customLeafMenuItems === void 0 ? void 0 :
                     customLeafMenuItems.map(function (item) {
                         if (item.toShow(d)) {
-                            return (React.createElement("a", { className: "dropdown-item", onClick: function () { item.onClick(d); menu === null || menu === void 0 ? void 0 : menu.remove(); } }, item.label(d)));
+                            return (React$1.createElement("a", { className: "dropdown-item", onClick: function () { item.onClick(d); menu === null || menu === void 0 ? void 0 : menu.remove(); } }, item.label(d)));
                         }
                     }))));
             if (menu) {
@@ -5643,7 +5833,7 @@ var RadialTree = forwardRef(function (_a, ref) {
         // Draw leaf labels
         var leafLabels = svg.append("g")
             .attr("class", "leaves")
-            .selectAll("text")
+            .selectAll(".leaf-label")
             .data(varData.leaves())
             .join("text")
             .each(function (d) { d.labelElement = this; })
@@ -5688,6 +5878,11 @@ var RadialTree = forwardRef(function (_a, ref) {
                 highlightDescendantsRadial(d, active, variableLinksRef.current, svg, innerRadius);
             };
         }
+        /**
+         * On hover over an internal node, display a tooltip with the node's name
+         * and the number of leaves in its clade.
+         * TODO: Add a param to allow users to customize the tooltip content.
+         */
         function showHoverLabel(event, d) {
             // Clear any existing tooltips
             selectAll('.tooltip-node').remove();
@@ -5723,26 +5918,53 @@ var RadialTree = forwardRef(function (_a, ref) {
                 .style('top', "".concat(event.clientY - 10, "px"))
                 .style('opacity', 1)
                 .node();
-            var MenuContent = (React.createElement(React.Fragment, null,
-                React.createElement("div", { className: "menu-header" }, d.data.name),
-                React.createElement("div", { className: "menu-buttons" },
-                    React.createElement("a", { className: "dropdown-item", onClick: function () { return toggleCollapseClade$1(d); } }, "Collapse Clade"),
-                    React.createElement("div", { className: "dropdown-divider" }),
-                    React.createElement("div", { className: "dropdown-header" }, "Toggle Selections"),
-                    React.createElement("a", { className: "dropdown-item", onClick: function () { return toggleHighlightDescendantLinks$1(d); } }, "Descendant Links"),
-                    React.createElement("a", { className: "dropdown-item", onClick: function () { return toggleHighlightTerminalLinks$1(d); } }, "Terminal Links"),
-                    React.createElement("a", { className: "dropdown-item", onClick: function () { return toggleHighlightLinkToRoot(d); } }, "Path to Root"),
-                    React.createElement("div", { className: "dropdown-divider" }),
-                    React.createElement("a", { className: "dropdown-item", onClick: function () {
+            var MenuContent = (React$1.createElement(React$1.Fragment, null,
+                React$1.createElement("div", { className: "menu-header" }, d.data.name),
+                React$1.createElement("div", { className: "menu-buttons" },
+                    React$1.createElement("a", { className: "dropdown-item", onClick: function () { return toggleCollapseClade$1(d); } }, "Collapse Clade"),
+                    React$1.createElement("div", { className: "dropdown-divider" }),
+                    React$1.createElement("div", { className: "dropdown-header" }, "Toggle Selections"),
+                    React$1.createElement("a", { className: "dropdown-item", onClick: function () { return toggleHighlightDescendantLinks$1(d); } }, "Descendant Links"),
+                    React$1.createElement("a", { className: "dropdown-item", onClick: function () { return toggleHighlightTerminalLinks$1(d); } }, "Terminal Links"),
+                    React$1.createElement("a", { className: "dropdown-item", onClick: function () { return toggleHighlightLinkToRoot(d); } }, "Path to Root"),
+                    React$1.createElement("div", { className: "dropdown-divider" }),
+                    React$1.createElement("a", { className: "dropdown-item", onClick: function (e) {
+                            e.preventDefault();
+                            var target = e.currentTarget;
+                            var picker = target.querySelector('div');
+                            if (!picker)
+                                return;
+                            // Toggle visibility of this picker
+                            picker.style.display = picker.style.display == "none" ? "block" : "none";
+                        } },
+                        "Highlight Clade",
+                        React$1.createElement("div", { style: {
+                                position: 'absolute',
+                                left: "150px",
+                                top: "180px",
+                                display: 'none',
+                            } },
+                            React$1.createElement(BasicColorPicker, { onClose: function () { }, onChange: function (color) {
+                                    var _a, _b;
+                                    if (color.hex === null) {
+                                        colorDescendantsRadial(d, false, variableLinksRef.current, svg, (_a = varData === null || varData === void 0 ? void 0 : varData.leaves()[0].y) !== null && _a !== void 0 ? _a : 0, "");
+                                        addColorState(d.data.name, "", true);
+                                    }
+                                    else {
+                                        colorDescendantsRadial(d, true, variableLinksRef.current, svg, (_b = varData === null || varData === void 0 ? void 0 : varData.leaves()[0].y) !== null && _b !== void 0 ? _b : 0, color.hex);
+                                        addColorState(d.data.name, color.hex);
+                                    }
+                                } }))),
+                    React$1.createElement("a", { className: "dropdown-item", onClick: function () {
                             if (varData) {
                                 setVarData(reroot(d, varData));
-                                stateRef.current = { root: d.data.name };
+                                addRootState(d.data.name);
                             }
                         } }, "Reroot Here"),
-                    React.createElement("div", { className: "dropdown-divider" }), customNodeMenuItems === null || customNodeMenuItems === void 0 ? void 0 :
+                    React$1.createElement("div", { className: "dropdown-divider" }), customNodeMenuItems === null || customNodeMenuItems === void 0 ? void 0 :
                     customNodeMenuItems.map(function (item) {
                         if (item.toShow(d)) {
-                            return (React.createElement("a", { className: "dropdown-item", onClick: function () { item.onClick(d); menu === null || menu === void 0 ? void 0 : menu.remove(); } }, item.label(d)));
+                            return (React$1.createElement("a", { className: "dropdown-item", onClick: function () { item.onClick(d); menu === null || menu === void 0 ? void 0 : menu.remove(); } }, item.label(d)));
                         }
                     }))));
             if (menu) {
@@ -5763,9 +5985,10 @@ var RadialTree = forwardRef(function (_a, ref) {
                     window.addEventListener('click', handleClickOutside);
                 }, 5);
             }
+            // This is the user-defined callback
             onNodeClick === null || onNodeClick === void 0 ? void 0 : onNodeClick(event, d);
         }
-        // Add nodes
+        // Add nodes to svg
         var nodes = svg.append("g")
             .attr("class", "nodes")
             .selectAll(".node")
@@ -5803,14 +6026,21 @@ var RadialTree = forwardRef(function (_a, ref) {
         }
     }, [varData, width]);
     useEffect(function () {
-        if (!initialStateApplied.current && state && varData) {
-            initialStateApplied.current = true;
+        if (varData) {
             // Apply root if specified
-            if (state.root) {
-                findAndReroot(state.root);
+            if (stateRef.current && stateRef.current.root) {
+                findAndReroot(stateRef.current.root);
             }
         }
-    }, [varData, state]);
+    }, [varData, stateRef.current]);
+    useEffect(function () {
+        if (varData && stateRef.current && stateRef.current.colorDict) {
+            for (var _i = 0, _a = Object.entries(stateRef.current.colorDict); _i < _a.length; _i++) {
+                var _b = _a[_i], name_1 = _b[0], color = _b[1];
+                findAndColor(name_1, color);
+            }
+        }
+    }, [varData, stateRef.current]);
     useEffect(function () {
         var _a, _b, _c, _d, _e;
         var t = transition().duration(750);
@@ -5871,6 +6101,61 @@ var RadialTree = forwardRef(function (_a, ref) {
             }
         }
     };
+    /**
+     * Searches for node with given name and colors it and its descendants
+     * Currently used to apply the color state
+     */
+    var findAndColor = function (name, color) {
+        var _a;
+        if (varData) {
+            var findNode_2 = function (node) {
+                if (node.data.name === name) {
+                    return node;
+                }
+                if (node.children) {
+                    for (var _i = 0, _a = node.children; _i < _a.length; _i++) {
+                        var child = _a[_i];
+                        var found = findNode_2(child);
+                        if (found)
+                            return found;
+                    }
+                }
+                return null;
+            };
+            var targetNode = findNode_2(varData);
+            if (targetNode && svgRef.current) {
+                colorDescendantsRadial(targetNode, true, variableLinksRef.current, select(svgRef.current).select('g'), (_a = varData.leaves()[0].y) !== null && _a !== void 0 ? _a : 0, color);
+            }
+        }
+    };
+    /**
+     * The below two functions handle updating the current state
+     */
+    var addColorState = function (name, color, remove) {
+        var _a;
+        if (remove === void 0) { remove = false; }
+        if (remove) {
+            if (stateRef.current && stateRef.current.colorDict) {
+                delete stateRef.current.colorDict[name];
+            }
+        }
+        else if (stateRef.current) {
+            stateRef.current.colorDict = stateRef.current.colorDict || {};
+            stateRef.current.colorDict[name] = color;
+        }
+        else {
+            stateRef.current = { colorDict: (_a = {}, _a[name] = color, _a) };
+        }
+    };
+    var addRootState = function (name) {
+        if (stateRef.current) {
+            stateRef.current.root = name;
+        }
+        else {
+            stateRef.current = { root: name };
+        }
+    };
+    // These functions may be called from a ref to the tree object
     useImperativeHandle(ref, function () { return ({
         getLinkExtensions: function () { return linkExtensionRef.current; },
         getLinks: function () { return linkRef.current; },
@@ -5882,7 +6167,19 @@ var RadialTree = forwardRef(function (_a, ref) {
         recenterView: function () { return recenterView(); },
         refresh: function () {
             setRefreshTrigger(function (prev) { return prev + 1; });
-            stateRef.current = undefined;
+            stateRef.current = {};
+        },
+        resetRoot: function () {
+            if (stateRef.current) {
+                delete stateRef.current.root;
+            }
+            setRefreshTrigger(function (prev) { return prev + 1; });
+        },
+        clearHighlights: function () {
+            if (stateRef.current) {
+                delete stateRef.current.colorDict;
+            }
+            setRefreshTrigger(function (prev) { return prev + 1; });
         },
         getRoot: function () { return varData; },
         getContainer: function () { return containerRef.current; },
@@ -5894,11 +6191,11 @@ var RadialTree = forwardRef(function (_a, ref) {
         findAndReroot: findAndReroot,
         getState: function () { return stateRef.current; }
     }); });
-    return (React.createElement("div", { className: "radial-tree", style: { width: "100%", height: "100%" } },
-        React.createElement("div", { ref: containerRef, style: {
+    return (React$1.createElement("div", { className: "radial-tree", style: { width: "100%", height: "100%" } },
+        React$1.createElement("div", { ref: containerRef, style: {
                 width: "100%",
                 height: "100%",
-                overflow: "show",
+                overflow: "show"
             } })));
 });
 
@@ -5961,6 +6258,40 @@ function highlightClade(node, active, svg, scale) {
             .attr('d', complexPath(childrenCoords, nodeX, nodeY))
             .style('fill', 'rgba(255, 255, 0, 0.2)')
             .style('stroke', 'none');
+    }
+}
+function colorClade(node, active, svg, scale, color) {
+    if (node.isTip)
+        return;
+    // Get array of all coordinates of children
+    var childrenCoords = getAllLeafCoords(node, scale);
+    var complexPath = function (coords, nodeX, nodeY) {
+        var path = "M ".concat(nodeX, " ").concat(nodeY);
+        coords.forEach(function (coord) {
+            path += " L ".concat(coord.x, " ").concat(coord.y);
+        });
+        path += " L ".concat(nodeX, " ").concat(nodeY);
+        return path;
+    };
+    // Remove existing highlight
+    svg.selectAll(".color-box-".concat(node.data.name)).remove();
+    if (active) {
+        // Node center point
+        var nodeX = node.x * scale;
+        var nodeY = node.y * scale;
+        var colorGroup = svg.select('g.color-boxes');
+        if (colorGroup.empty()) {
+            colorGroup = svg.insert('g', ':first-child')
+                .attr('class', 'color-boxes')
+                .style('isolation', 'isolate')
+                .lower();
+        }
+        colorGroup.append('path')
+            .attr('class', "color-box color-box-".concat(node.data.name))
+            .attr('d', complexPath(childrenCoords, nodeX, nodeY))
+            .style('fill', color)
+            .style('stroke', 'none')
+            .style('composite-operation', 'source-over');
     }
 }
 // mapChildren is different from UnrootedNodes. Children are stored in children as TreeNodes (without elements data), and in 
@@ -6293,23 +6624,23 @@ var UnrootedTree = forwardRef(function (_a, ref) {
                 .style('top', "".concat(event.clientY - 10, "px"))
                 .style('opacity', 1)
                 .node();
-            var MenuContent = (React.createElement(React.Fragment, null,
-                React.createElement("div", { className: "menu-header" },
+            var MenuContent = (React$1.createElement(React$1.Fragment, null,
+                React$1.createElement("div", { className: "menu-header" },
                     d.source.thisName,
                     "-",
                     d.target.thisName),
-                React.createElement("div", { className: "menu-buttons" },
-                    React.createElement("div", { className: "dropdown-divider" }),
-                    React.createElement("a", { className: "dropdown-item", onClick: function () {
+                React$1.createElement("div", { className: "menu-buttons" },
+                    React$1.createElement("div", { className: "dropdown-divider" }),
+                    React$1.createElement("a", { className: "dropdown-item", onClick: function () {
                             if (varData) {
                                 rootOnBranch(d);
-                                stateRef.current = { root: d.target.thisName };
+                                addRootState(d.target.thisName);
                             }
                         } }, "Root Here"),
-                    React.createElement("div", { className: "dropdown-divider" }), customLinkMenuItems === null || customLinkMenuItems === void 0 ? void 0 :
+                    React$1.createElement("div", { className: "dropdown-divider" }), customLinkMenuItems === null || customLinkMenuItems === void 0 ? void 0 :
                     customLinkMenuItems.map(function (item) {
                         if (item.toShow(d.source, d.target)) {
-                            return (React.createElement("a", { className: "dropdown-item", onClick: function () { item.onClick(d.source, d.target); menu === null || menu === void 0 ? void 0 : menu.remove(); } }, item.label(d.source, d.target)));
+                            return (React$1.createElement("a", { className: "dropdown-item", onClick: function () { item.onClick(d.source, d.target); menu === null || menu === void 0 ? void 0 : menu.remove(); } }, item.label(d.source, d.target)));
                         }
                     }))));
             if (menu) {
@@ -6420,13 +6751,13 @@ var UnrootedTree = forwardRef(function (_a, ref) {
                 .style('top', "".concat(event.clientY - 10, "px"))
                 .style('opacity', 1)
                 .node();
-            var MenuContent = (React.createElement(React.Fragment, null,
-                React.createElement("div", { className: "menu-header" }, d.data.name),
-                React.createElement("div", { className: "menu-buttons" },
-                    React.createElement("div", { className: "dropdown-divider" }), customLeafMenuItems === null || customLeafMenuItems === void 0 ? void 0 :
+            var MenuContent = (React$1.createElement(React$1.Fragment, null,
+                React$1.createElement("div", { className: "menu-header" }, d.data.name),
+                React$1.createElement("div", { className: "menu-buttons" },
+                    React$1.createElement("div", { className: "dropdown-divider" }), customLeafMenuItems === null || customLeafMenuItems === void 0 ? void 0 :
                     customLeafMenuItems.map(function (item) {
                         if (item.toShow(d)) {
-                            return (React.createElement("a", { className: "dropdown-item", onClick: function () { item.onClick(d); menu === null || menu === void 0 ? void 0 : menu.remove(); } }, item.label(d)));
+                            return (React$1.createElement("a", { className: "dropdown-item", onClick: function () { item.onClick(d); menu === null || menu === void 0 ? void 0 : menu.remove(); } }, item.label(d)));
                         }
                     }))));
             if (menu) {
@@ -6534,18 +6865,45 @@ var UnrootedTree = forwardRef(function (_a, ref) {
                 .style('top', "".concat(event.clientY - 10, "px"))
                 .style('opacity', 1)
                 .node();
-            var MenuContent = (React.createElement(React.Fragment, null,
-                React.createElement("div", { className: "menu-header" }, d.thisName),
-                React.createElement("div", { className: "menu-buttons" },
-                    React.createElement("a", { className: "dropdown-item", onClick: function () { return toggleCollapseClade(d); } }, "Collapse Clade"),
-                    React.createElement("div", { className: "dropdown-divider" }),
-                    React.createElement("div", { className: "dropdown-header" }, "Toggle Selections"),
-                    React.createElement("a", { className: "dropdown-item", onClick: function () { return toggleHighlightDescendantLinks(d); } }, "Descendant Links"),
-                    React.createElement("a", { className: "dropdown-item", onClick: function () { return toggleHighlightTerminalLinks(d); } }, "Terminal Links"),
-                    React.createElement("div", { className: "dropdown-divider" }), customNodeMenuItems === null || customNodeMenuItems === void 0 ? void 0 :
+            var MenuContent = (React$1.createElement(React$1.Fragment, null,
+                React$1.createElement("div", { className: "menu-header" }, d.thisName),
+                React$1.createElement("div", { className: "menu-buttons" },
+                    React$1.createElement("a", { className: "dropdown-item", onClick: function () { return toggleCollapseClade(d); } }, "Collapse Clade"),
+                    React$1.createElement("div", { className: "dropdown-divider" }),
+                    React$1.createElement("div", { className: "dropdown-header" }, "Toggle Selections"),
+                    React$1.createElement("a", { className: "dropdown-item", onClick: function () { return toggleHighlightDescendantLinks(d); } }, "Descendant Links"),
+                    React$1.createElement("a", { className: "dropdown-item", onClick: function () { return toggleHighlightTerminalLinks(d); } }, "Terminal Links"),
+                    React$1.createElement("div", { className: "dropdown-divider" }),
+                    React$1.createElement("a", { className: "dropdown-item", onClick: function (e) {
+                            e.preventDefault();
+                            var target = e.currentTarget;
+                            var picker = target.querySelector('div');
+                            if (!picker)
+                                return;
+                            // Toggle visibility of this picker
+                            picker.style.display = picker.style.display == "none" ? "block" : "none";
+                        } },
+                        "Highlight Clade",
+                        React$1.createElement("div", { style: {
+                                position: 'absolute',
+                                left: "150px",
+                                top: "180px",
+                                display: 'none',
+                            } },
+                            React$1.createElement(BasicColorPicker, { onClose: function () { }, onChange: function (color) {
+                                    if (color.hex === null) {
+                                        colorClade(d, false, svg, scale, "");
+                                        addColorState(d.data.name, "", true);
+                                    }
+                                    else {
+                                        colorClade(d, true, svg, scale, color.hex);
+                                        addColorState(d.data.name, color.hex);
+                                    }
+                                } }))),
+                    React$1.createElement("div", { className: "dropdown-divider" }), customNodeMenuItems === null || customNodeMenuItems === void 0 ? void 0 :
                     customNodeMenuItems.map(function (item) {
                         if (item.toShow(d)) {
-                            return (React.createElement("a", { className: "dropdown-item", onClick: function () { item.onClick(d); menu === null || menu === void 0 ? void 0 : menu.remove(); } }, item.label(d)));
+                            return (React$1.createElement("a", { className: "dropdown-item", onClick: function () { item.onClick(d); menu === null || menu === void 0 ? void 0 : menu.remove(); } }, item.label(d)));
                         }
                     }))));
             if (menu) {
@@ -6628,11 +6986,20 @@ var UnrootedTree = forwardRef(function (_a, ref) {
         if (!initialStateApplied.current && state && varData) {
             initialStateApplied.current = true;
             // Apply root if specified
-            if (state.root) {
-                findAndAddRoot(state.root);
+            if (stateRef.current && stateRef.current.root) {
+                console.log("Applying root state");
+                findAndAddRoot(stateRef.current.root);
             }
         }
-    }, [varData, state]);
+    }, [varData, stateRef.current]);
+    useEffect(function () {
+        if (varData && stateRef.current && stateRef.current.colorDict) {
+            for (var _i = 0, _a = Object.entries(stateRef.current.colorDict); _i < _a.length; _i++) {
+                var _b = _a[_i], name_1 = _b[0], color = _b[1];
+                findAndColor(name_1, color);
+            }
+        }
+    }, [varData, stateRef.current]);
     useEffect(function () {
         var _a, _b;
         (_a = leafLabelsRef.current) === null || _a === void 0 ? void 0 : _a.style("display", displayLeaves ? "block" : "none");
@@ -6703,6 +7070,48 @@ var UnrootedTree = forwardRef(function (_a, ref) {
             }
         }
     };
+    var findAndColor = function (name, color) {
+        if (varData) {
+            var findNode = function (nodes) {
+                for (var _i = 0, nodes_2 = nodes; _i < nodes_2.length; _i++) {
+                    var node = nodes_2[_i];
+                    if (node.thisName === name) {
+                        return node;
+                    }
+                }
+                return null;
+            };
+            // Find node and reroot if found
+            var targetNode = findNode(varData.data);
+            if (targetNode && svgRef.current) {
+                colorClade(targetNode, true, select(svgRef.current).select('g'), scale, color);
+            }
+        }
+    };
+    var addColorState = function (name, color, remove) {
+        var _a;
+        if (remove === void 0) { remove = false; }
+        if (remove) {
+            if (stateRef.current && stateRef.current.colorDict) {
+                delete stateRef.current.colorDict[name];
+            }
+        }
+        else if (stateRef.current) {
+            stateRef.current.colorDict = stateRef.current.colorDict || {};
+            stateRef.current.colorDict[name] = color;
+        }
+        else {
+            stateRef.current = { colorDict: (_a = {}, _a[name] = color, _a) };
+        }
+    };
+    var addRootState = function (name) {
+        if (stateRef.current) {
+            stateRef.current.root = name;
+        }
+        else {
+            stateRef.current = { root: name };
+        }
+    };
     useImperativeHandle(ref, function () { return ({
         getLinkExtensions: function () { return linkExtensionRef.current; },
         getLinks: function () { return linkRef.current; },
@@ -6714,6 +7123,19 @@ var UnrootedTree = forwardRef(function (_a, ref) {
             setRefreshTrigger(function (prev) { return prev + 1; });
             stateRef.current = undefined;
         },
+        resetRoot: function () {
+            if (stateRef.current) {
+                delete stateRef.current.root;
+            }
+            setRefreshTrigger(function (prev) { return prev + 1; });
+        },
+        clearHighlights: function () {
+            if (stateRef.current) {
+                delete stateRef.current.colorDict;
+            }
+            setRefreshTrigger(function (prev) { return prev + 1; });
+            initialStateApplied.current = false;
+        },
         getRoot: function () { return varData; },
         getData: function () { return varData; },
         getContainer: function () { return containerRef.current; },
@@ -6724,8 +7146,8 @@ var UnrootedTree = forwardRef(function (_a, ref) {
         },
         getState: function () { return stateRef.current; }
     }); });
-    return (React.createElement("div", { className: "radial-tree", style: { width: "100%", height: "100%" } },
-        React.createElement("div", { ref: containerRef, style: {
+    return (React$1.createElement("div", { className: "radial-tree", style: { width: "100%", height: "100%" } },
+        React$1.createElement("div", { ref: containerRef, style: {
                 width: "100%",
                 height: "100%",
                 overflow: "show",
@@ -6778,7 +7200,6 @@ function addRoot(df, rootLeft, rootRight) {
         var parent = node.parent;
         //remove current from parent's children, add parent to current's children
         while (parent && parent != current) { // second condition to prevent infinite loop when double rerooting
-            console.log("swapping parent and child", current, parent);
             parent.children = parent.children.filter(function (child) { return child !== current; });
             parent.parentId = current.thisId;
             current.children.push(parent);

@@ -16,7 +16,7 @@ import {
 } from './radialUtils.ts';
 import '../css/tree3.css';
 import '../css/menu.css';
-import BasicColorPicker from './colorPicker.tsx';
+import BasicColorPicker from './colorPicker';
 
 export interface RadialTreeRef {
   getLinkExtensions: () => d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown> | null;
@@ -68,13 +68,21 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
   const variableLinksRef = useRef<boolean>(false); // Using this ref so highlighting descendants updates correctly
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [varData, setVarData] = useState<RadialNode | null>(null);
-  const initialStateApplied = useRef(false);
   const stateRef = useRef(state);
 
   const outerRadius = width / 2;
   const innerRadius = outerRadius - 170;
 
+  // Store the given state in a ref
   useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  /**
+   * The code block below reads a raw newick string and
+   * stores the tree object in varData
+   */
+  useEffect(() => { // Read data and convert to d3 format
     if (!data) return;
 
     const convertedData = convertToD3Format(readTree(data));
@@ -108,6 +116,12 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       + "L" + endRadius * c1 + "," + endRadius * s1;
   }
 
+  /**
+   * These two functions below are used to draw links between nodes
+   * in the tree. The first function is used when the links must be 
+   * representative distances, whereas the second function is used
+   * when the links must be extend to reach the outer radius.
+   */
   function linkVariable(d: Link<RadialNode>): string {
     return linkStep(d.source.x ?? 0, d.source.radius ?? 0, d.target.x ?? 0, d.target.radius ?? 0);
   }
@@ -116,6 +130,10 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     return linkStep(d.source.x ?? 0, d.source.y ?? 0, d.target.x ?? 0, d.target.y ?? 0);
   }
 
+  /**
+   * As with the above, these two functions are used to draw links
+   * between leaf nodes and their labels
+   */
   function linkExtensionVariable(d: Link<RadialNode>): string {
     return linkStep(d.target.x ?? 0, d.target.radius ?? 0, d.target.x ?? 0, innerRadius);
   }
@@ -124,6 +142,10 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     return linkStep(d.target.x ?? 0, d.target.y ?? 0, d.target.x ?? 0, innerRadius);
   }
 
+
+  /**
+   * The below two functions calculate node's position 
+   */
   function nodeTransformVariable(d: RadialNode): string {
     return `
       rotate(${(d.x ?? 0) - 90}) 
@@ -140,12 +162,13 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     `;
   }
 
-  useEffect(() => { // Render tree
+  // Render tree
+  useEffect(() => {
     if (!containerRef.current || !varData) return;
 
     // Zoom behavior
     const zoom = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.5, 5]) // Min/max zoom level
+      .scaleExtent([0.1, 20]) // Min/max zoom level
       .on('zoom', (event) => {
         svgMain.select("g").attr('transform', event.transform);
       });
@@ -155,22 +178,21 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
 
     // Make SVG element
     const svgMain: d3.Selection<SVGSVGElement, unknown, null, undefined> = d3.select(containerRef.current).append("svg")
-      //.attr("viewBox", [-outerRadius, -outerRadius, width, width])
       .attr("width", "100%") // Set width to 100%
       .attr("height", "100%") // Set height to 100%
       .attr("font-family", "sans-serif")
-      .attr("font-size", 5)
+      .attr("font-size", 5) // TODO: Make this a param
       .call(zoom);
 
-    const svg = svgMain.append("g")
+    const svg = svgMain.append("g") // The tree will go into this group
       .attr("class", "tree");
 
     const cluster = d3.cluster<D3Node>()
       .size([355, innerRadius]) // [angle to spread nodes, radius]
-      //.nodeSize([.7, 15]) // specifies the size of a leaf node, play around to ensure no label overlap at higher leaf counts
       .separation((a, b) => 1)
 
-    cluster(varData); // Places leaves all on same level
+    // Places leaves all on same level
+    cluster(varData);
     setRadius(varData, 0, innerRadius / maxLength(varData));
 
     // Link functions
@@ -363,7 +385,7 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     // Draw leaf labels
     const leafLabels = svg.append("g")
       .attr("class", "leaves")
-      .selectAll("text")
+      .selectAll(".leaf-label")
       .data(varData.leaves())
       .join("text")
       .each(function (d: RadialNode) { d.labelElement = this as SVGTextElement; })
@@ -413,6 +435,11 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       };
     }
 
+    /**
+     * On hover over an internal node, display a tooltip with the node's name
+     * and the number of leaves in its clade. 
+     * TODO: Add a param to allow users to customize the tooltip content.
+     */
     function showHoverLabel(event: MouseEvent, d: RadialNode): void {
       // Clear any existing tooltips
       d3.selectAll('.tooltip-node').remove();
@@ -550,10 +577,11 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
         }, 5);
       }
 
+      // This is the user-defined callback
       onNodeClick?.(event, d);
     }
 
-    // Add nodes
+    // Add nodes to svg
     const nodes = svg.append("g")
       .attr("class", "nodes")
       .selectAll(".node")
@@ -597,15 +625,13 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
   }, [varData, width]);
 
   useEffect(() => { // If state is provided, apply it once
-    if (!initialStateApplied.current && state && varData) {
-      initialStateApplied.current = true;
-
+    if (varData) {
       // Apply root if specified
-      if (state.root) {
-        findAndReroot(state.root);
+      if (stateRef.current && stateRef.current.root) {
+        findAndReroot(stateRef.current.root);
       }
     }
-  }, [varData, state]);
+  }, [varData, stateRef.current]);
 
   useEffect(() => { // Whenever varData is updated, attempt to apply state colors
     if (varData && stateRef.current && stateRef.current.colorDict) {
@@ -613,7 +639,7 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
         findAndColor(name, color);
       }
     }
-  }, [varData]);
+  }, [varData, stateRef.current]);
 
   useEffect(() => { // Transition between variable and constant links, and tip alignment
     const t = d3.transition().duration(750);
@@ -685,6 +711,10 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     }
   };
 
+  /**
+   * Searches for node with given name and colors it and its descendants
+   * Currently used to apply the color state
+   */
   const findAndColor = (name: string, color: string) => {
     if (varData) {
       const findNode = (node: RadialNode): RadialNode | null => {
@@ -707,6 +737,9 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     }
   };
 
+  /**
+   * The below two functions handle updating the current state
+   */
   const addColorState = (name: string, color: string, remove = false) => {
     if (remove) {
       if (stateRef.current && stateRef.current.colorDict) {
@@ -728,6 +761,7 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     }
   }
 
+  // These functions may be called from a ref to the tree object
   useImperativeHandle(ref, () => ({
     getLinkExtensions: () => linkExtensionRef.current,
     getLinks: () => linkRef.current,
@@ -740,6 +774,18 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     refresh: () => {
       setRefreshTrigger(prev => prev + 1);
       stateRef.current = {};
+    },
+    resetRoot: () => {
+      if (stateRef.current) {
+        delete stateRef.current.root;
+      }
+      setRefreshTrigger(prev => prev + 1);
+    },
+    clearHighlights: () => {
+      if (stateRef.current) {
+        delete stateRef.current.colorDict;
+      }
+      setRefreshTrigger(prev => prev + 1);
     },
     getRoot: () => varData,
     getContainer: () => containerRef.current,
@@ -757,7 +803,7 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
       <div ref={containerRef} style={{
         width: "100%",
         height: "100%",
-        overflow: "show",
+        overflow: "show"
       }} />
     </div>
   );

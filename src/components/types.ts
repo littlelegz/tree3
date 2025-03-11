@@ -17,6 +17,11 @@ export interface Link<NodeType> {
   target: NodeType;
 }
 
+export interface state {
+  root?: string;
+  colorDict?: { [key: string]: string };
+}
+
 export interface RadialTreeProps {
   data: string;
   width?: number;
@@ -48,9 +53,7 @@ export interface RadialTreeProps {
   linkStyler?: (source: RadialNode, target: RadialNode) => void;
   leafStyler?: (node: RadialNode) => void;
   homeNode?: string;
-  state?: {
-    root?: string;
-  }
+  state?: state
 }
 
 // Extend D3's HierarchyNode with radius property
@@ -103,9 +106,7 @@ export interface UnrootedTreeProps {
   leafStyler?: (node: UnrootedNode) => void;
   homeNode: string;
   linkRoot: boolean;
-  state?: {
-    root?: string;
-  }
+  state?: state
 }
 
 export interface UnrootedNode extends TreeNode {

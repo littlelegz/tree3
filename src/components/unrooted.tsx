@@ -656,16 +656,17 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
 
   }, [varData]);
 
-  useEffect(() => {
+  useEffect(() => { // If state is provided, apply it once
     if (!initialStateApplied.current && state && varData) {
       initialStateApplied.current = true;
 
       // Apply root if specified
-      if (state.root) {
-        findAndAddRoot(state.root);
+      if (stateRef.current && stateRef.current.root) {
+        console.log("Applying root state");
+        findAndAddRoot(stateRef.current.root);
       }
     }
-  }, [varData, state]);
+  }, [varData, stateRef.current]);
 
   useEffect(() => { // Whenever varData is updated, attempt to apply state colors
     if (varData && stateRef.current && stateRef.current.colorDict) {
@@ -673,7 +674,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
         findAndColor(name, color);
       }
     }
-  }, [varData]);
+  }, [varData, stateRef.current]);
 
   useEffect(() => { // Toggle leaf label visibility
     leafLabelsRef.current?.style("display", displayLeaves ? "block" : "none");
@@ -802,6 +803,19 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     refresh: () => {
       setRefreshTrigger(prev => prev + 1);
       stateRef.current = undefined;
+    },
+    resetRoot: () => {
+      if (stateRef.current) {
+        delete stateRef.current.root;
+      }
+      setRefreshTrigger(prev => prev + 1);
+    },
+    clearHighlights: () => {
+      if (stateRef.current) {
+        delete stateRef.current.colorDict;
+      }
+      setRefreshTrigger(prev => prev + 1);
+      initialStateApplied.current = false;
     },
     getRoot: () => varData,
     getData: () => varData,

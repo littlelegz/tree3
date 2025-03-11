@@ -18,7 +18,7 @@ import {
 } from './rectUtils.ts';
 import '../css/tree3.css';
 import '../css/menu.css';
-import BasicColorPicker from './colorPicker.tsx';
+import BasicColorPicker from './colorPicker';
 
 export interface RectTreeRef {
   getLinkExtensions: () => d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown> | null;
@@ -69,9 +69,7 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
   const variableLinksRef = useRef<boolean>(false); // Using this ref so highlighting descendants updates correctly
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [varData, setVarData] = useState<RadialNode | null>(null);
-  const initialStateApplied = useRef(false);
   const stateRef = useRef(state);
-  const [colorPickerOpen, setColorPickerOpen] = useState(false);
 
   useEffect(() => {
     stateRef.current = state;
@@ -136,7 +134,7 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
 
     // Zoom behavior
     const zoom = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.5, 5])
+      .scaleExtent([0.1, 20])
       .on('zoom', (event) => {
         svgMain.select("g").attr('transform', event.transform);
       });
@@ -147,7 +145,6 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
     // Setup SVG
     const svgMain = d3.select(containerRef.current)
       .append("svg")
-      //.attr("viewBox", [0, 0, width, width])
       .attr("width", "100%") // Set width to 100%
       .attr("height", "100%") // Set height to 100%
       .attr("font-family", "sans-serif")
@@ -162,9 +159,7 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
       .nodeSize([10, 20])
       .separation((a, b) => 2);           // Equal separation between nodes
 
-    // Generate tree layout
     cluster(varData);
-    // get the width of tree, find first leaf node, and get x value=
     setRadius(varData, 0, (varData.leaves()[0].y ?? 0) / maxLength(varData));
 
     // Link functions
@@ -491,7 +486,6 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
                 <BasicColorPicker
                   onClose={() => { }}
                   onChange={(color) => {
-                    console.log(color);
                     if (color.hex === null) {
                       colorDescendantsRect(d, false, variableLinksRef.current, svg, varData?.leaves()[0].y ?? 0, "");
                       addColorState(d.data.name, "", true);
@@ -522,7 +516,6 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
                 );
               }
             })}
-
           </div>
         </>
       );
@@ -590,15 +583,13 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
   }, [varData, width]);
 
   useEffect(() => { // If state is provided, apply it once
-    if (!initialStateApplied.current && state && varData) {
-      initialStateApplied.current = true;
-
+    if (varData) {
       // Apply root if specified
-      if (state.root) {
-        findAndReroot(state.root);
+      if (stateRef.current && stateRef.current.root) {
+        findAndReroot(stateRef.current.root);
       }
     }
-  }, [varData, state]);
+  }, [varData, stateRef.current]);
 
   useEffect(() => { // Whenever varData is updated, attempt to apply state colors
     if (varData && stateRef.current && stateRef.current.colorDict) {
@@ -606,7 +597,7 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
         findAndColor(name, color);
       }
     }
-  }, [varData]);
+  }, [varData, stateRef.current]);
 
   useEffect(() => { // Transition between variable and constant links, and tip alignment
     const t = d3.transition().duration(750);
@@ -732,6 +723,18 @@ const RectTree = forwardRef<RectTreeRef, RadialTreeProps>(({
     refresh: () => {
       setRefreshTrigger(prev => prev + 1);
       stateRef.current = {};
+    },
+    resetRoot: () => {
+      if (stateRef.current) {
+        delete stateRef.current.root;
+      }
+      setRefreshTrigger(prev => prev + 1);
+    },
+    clearHighlights: () => {
+      if (stateRef.current) {
+        delete stateRef.current.colorDict;
+      }
+      setRefreshTrigger(prev => prev + 1);
     },
     getRoot: () => varData,
     getContainer: () => containerRef.current,

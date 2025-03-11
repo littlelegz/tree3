@@ -109,6 +109,12 @@ function App() {
         <button onClick={() => { console.log(unrootedRef.current.getState()) }}>
           print state
         </button>
+        <button onClick={() => { rectRef.current.resetRoot(); radialRef.current.resetRoot(); unrootedRef.current.resetRoot(); }}>
+          Reset Root
+        </button>
+        <button onClick={() => { rectRef.current.clearHighlights(); radialRef.current.clearHighlights(); unrootedRef.current.clearHighlights(); }}>
+          Clear Highlights
+        </button>
       </div>
     </div>
   );
