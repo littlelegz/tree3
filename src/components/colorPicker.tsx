@@ -1,3 +1,5 @@
+import React from 'react';
+
 interface ColorPickerProps {
   onChange: (color: { hex: string | null}) => void;
   onClose: () => void;
