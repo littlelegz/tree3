@@ -4962,7 +4962,8 @@ var RectTree = React.forwardRef(function (_a, ref) {
     var data = _a.data, _b = _a.width, width = _b === void 0 ? 1000 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, customLinkMenuItems = _a.customLinkMenuItems, customTooltip = _a.customTooltip, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler, homeNode = _a.homeNode, state = _a.state;
     var _c = React.useState(false), variableLinks = _c[0], setVariableLinks = _c[1];
     var _d = React.useState(true), displayLeaves = _d[0], setDisplayLeaves = _d[1];
-    var _e = React.useState(false), tipAlign = _e[0], setTipAlign = _e[1];
+    var _e = React.useState(true), displayNodes = _e[0], setDisplayNodes = _e[1];
+    var _f = React.useState(false), tipAlign = _f[0], setTipAlign = _f[1];
     var linkExtensionRef = React.useRef(null);
     var linkRef = React.useRef(null);
     var nodesRef = React.useRef(null);
@@ -4971,8 +4972,8 @@ var RectTree = React.forwardRef(function (_a, ref) {
     var tooltipRef = React.useRef(null);
     var svgRef = React.useRef(null);
     var variableLinksRef = React.useRef(false); // Using this ref so highlighting descendants updates correctly
-    var _f = React.useState(0), refreshTrigger = _f[0], setRefreshTrigger = _f[1];
-    var _g = React.useState(null), varData = _g[0], setVarData = _g[1];
+    var _g = React.useState(0), refreshTrigger = _g[0], setRefreshTrigger = _g[1];
+    var _h = React.useState(null), varData = _h[0], setVarData = _h[1];
     var stateRef = React.useRef(state);
     React.useEffect(function () {
         stateRef.current = state;
@@ -5439,6 +5440,10 @@ var RectTree = React.forwardRef(function (_a, ref) {
         (_a = leafLabelsRef.current) === null || _a === void 0 ? void 0 : _a.style("display", displayLeaves ? "block" : "none");
         (_b = linkExtensionRef.current) === null || _b === void 0 ? void 0 : _b.style("display", displayLeaves ? "block" : "none");
     }, [displayLeaves]);
+    React.useEffect(function () {
+        var _a;
+        (_a = nodesRef.current) === null || _a === void 0 ? void 0 : _a.style("display", displayNodes ? "block" : "none");
+    }, [displayNodes]);
     var recenterView = function () {
         var svg = select(containerRef.current).select('svg').select('g');
         svg.transition()
@@ -5523,6 +5528,7 @@ var RectTree = React.forwardRef(function (_a, ref) {
         getLeaves: function () { return leafLabelsRef.current; },
         setVariableLinks: function (value) { return setVariableLinks(value); },
         setDisplayLeaves: function (value) { return setDisplayLeaves(value); },
+        setDisplayNodes: function (value) { return setDisplayNodes(value); },
         setTipAlign: function (value) { return setTipAlign(value); },
         recenterView: function () { return recenterView(); },
         refresh: function () {
@@ -5563,7 +5569,8 @@ var RadialTree = React.forwardRef(function (_a, ref) {
     var data = _a.data, _b = _a.width, width = _b === void 0 ? 1000 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, customLinkMenuItems = _a.customLinkMenuItems, customTooltip = _a.customTooltip, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler, homeNode = _a.homeNode, state = _a.state;
     var _c = React.useState(false), variableLinks = _c[0], setVariableLinks = _c[1];
     var _d = React.useState(true), displayLeaves = _d[0], setDisplayLeaves = _d[1];
-    var _e = React.useState(false), tipAlign = _e[0], setTipAlign = _e[1];
+    var _e = React.useState(true), displayNodes = _e[0], setDisplayNodes = _e[1];
+    var _f = React.useState(false), tipAlign = _f[0], setTipAlign = _f[1];
     var linkExtensionRef = React.useRef(null);
     var linkRef = React.useRef(null);
     var nodesRef = React.useRef(null);
@@ -5572,8 +5579,8 @@ var RadialTree = React.forwardRef(function (_a, ref) {
     var tooltipRef = React.useRef(null);
     var svgRef = React.useRef(null);
     var variableLinksRef = React.useRef(false); // Using this ref so highlighting descendants updates correctly
-    var _f = React.useState(0), refreshTrigger = _f[0], setRefreshTrigger = _f[1];
-    var _g = React.useState(null), varData = _g[0], setVarData = _g[1];
+    var _g = React.useState(0), refreshTrigger = _g[0], setRefreshTrigger = _g[1];
+    var _h = React.useState(null), varData = _h[0], setVarData = _h[1];
     var stateRef = React.useRef(state);
     var outerRadius = width / 2;
     var innerRadius = outerRadius - 170;
@@ -6073,6 +6080,10 @@ var RadialTree = React.forwardRef(function (_a, ref) {
         (_a = leafLabelsRef.current) === null || _a === void 0 ? void 0 : _a.style("display", displayLeaves ? "block" : "none");
         (_b = linkExtensionRef.current) === null || _b === void 0 ? void 0 : _b.style("display", displayLeaves ? "block" : "none");
     }, [displayLeaves]);
+    React.useEffect(function () {
+        var _a;
+        (_a = nodesRef.current) === null || _a === void 0 ? void 0 : _a.style("display", displayNodes ? "block" : "none");
+    }, [displayNodes]);
     var recenterView = function () {
         var svg = select(containerRef.current).select('svg').select('g');
         svg.transition()
@@ -6165,6 +6176,7 @@ var RadialTree = React.forwardRef(function (_a, ref) {
         getLeaves: function () { return leafLabelsRef.current; },
         setVariableLinks: function (value) { return setVariableLinks(value); },
         setDisplayLeaves: function (value) { return setDisplayLeaves(value); },
+        setDisplayNodes: function (value) { return setDisplayNodes(value); },
         setTipAlign: function (value) { return setTipAlign(value); },
         recenterView: function () { return recenterView(); },
         refresh: function () {
@@ -6483,6 +6495,7 @@ function findAndZoom(name, svg, container, scale) {
 var UnrootedTree = React.forwardRef(function (_a, ref) {
     var data = _a.data, _b = _a.scale, scale = _b === void 0 ? 500 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, customLinkMenuItems = _a.customLinkMenuItems, customTooltip = _a.customTooltip, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler, homeNode = _a.homeNode, _c = _a.linkRoot, linkRoot = _c === void 0 ? true : _c, state = _a.state;
     var _d = React.useState(true), displayLeaves = _d[0], setDisplayLeaves = _d[1];
+    var _e = React.useState(true), displayNodes = _e[0], setDisplayNodes = _e[1];
     var linkExtensionRef = React.useRef(null);
     var linkRef = React.useRef(null);
     var nodesRef = React.useRef(null);
@@ -6490,8 +6503,8 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
     var containerRef = React.useRef(null);
     var tooltipRef = React.useRef(null);
     var svgRef = React.useRef(null);
-    var _e = React.useState(0), refreshTrigger = _e[0], setRefreshTrigger = _e[1];
-    var _f = React.useState(null), varData = _f[0], setVarData = _f[1];
+    var _f = React.useState(0), refreshTrigger = _f[0], setRefreshTrigger = _f[1];
+    var _g = React.useState(null), varData = _g[0], setVarData = _g[1];
     var initialStateApplied = React.useRef(false); // Used to prevent infinite loop when setting state
     var stateRef = React.useRef(state);
     // Read tree and calculate layout
@@ -6989,7 +7002,6 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
             initialStateApplied.current = true;
             // Apply root if specified
             if (stateRef.current && stateRef.current.root) {
-                console.log("Applying root state");
                 findAndAddRoot(stateRef.current.root);
             }
         }
@@ -7007,6 +7019,10 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
         (_a = leafLabelsRef.current) === null || _a === void 0 ? void 0 : _a.style("display", displayLeaves ? "block" : "none");
         (_b = linkExtensionRef.current) === null || _b === void 0 ? void 0 : _b.style("display", displayLeaves ? "block" : "none");
     }, [displayLeaves]);
+    React.useEffect(function () {
+        var _a;
+        (_a = nodesRef.current) === null || _a === void 0 ? void 0 : _a.style("display", displayNodes ? "block" : "none");
+    }, [displayNodes]);
     var recenterView = function () {
         var svg = select(containerRef.current).select('svg').select('g');
         svg.transition()
@@ -7120,6 +7136,7 @@ var UnrootedTree = React.forwardRef(function (_a, ref) {
         getNodes: function () { return nodesRef.current; },
         getLeaves: function () { return leafLabelsRef.current; },
         setDisplayLeaves: function (value) { return setDisplayLeaves(value); },
+        setDisplayNodes: function (value) { return setDisplayNodes(value); },
         recenterView: function () { return recenterView(); },
         refresh: function () {
             setRefreshTrigger(function (prev) { return prev + 1; });

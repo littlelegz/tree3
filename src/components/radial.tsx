@@ -25,6 +25,7 @@ export interface RadialTreeRef {
   getLeaves: () => d3.Selection<SVGTextElement, RadialNode, SVGGElement, unknown> | null;
   setVariableLinks: (value: boolean) => void;
   setDisplayLeaves: (value: boolean) => void;
+  setDisplayNodes: (value: boolean) => void;
   setTipAlign: (value: boolean) => void;
   recenterView: () => void;
   refresh: () => void;
@@ -58,6 +59,7 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
 }, ref) => {
   const [variableLinks, setVariableLinks] = useState(false);
   const [displayLeaves, setDisplayLeaves] = useState(true);
+  const [displayNodes, setDisplayNodes] = useState(true);
   const [tipAlign, setTipAlign] = useState(false);
   const linkExtensionRef = useRef<d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown>>(null);
   const linkRef = useRef<d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown>>(null);
@@ -680,6 +682,10 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     linkExtensionRef.current?.style("display", displayLeaves ? "block" : "none");
   }, [displayLeaves]);
 
+  useEffect(() => { // Toggle node visibility
+    nodesRef.current?.style("display", displayNodes ? "block" : "none");
+  }, [displayNodes]);
+
   const recenterView = () => {
     const svg = d3.select(containerRef.current).select('svg').select('g');
 
@@ -770,6 +776,7 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
     getLeaves: () => leafLabelsRef.current,
     setVariableLinks: (value: boolean) => setVariableLinks(value),
     setDisplayLeaves: (value: boolean) => setDisplayLeaves(value),
+    setDisplayNodes: (value: boolean) => setDisplayNodes(value),
     setTipAlign: (value: boolean) => setTipAlign(value),
     recenterView: () => recenterView(),
     refresh: () => {

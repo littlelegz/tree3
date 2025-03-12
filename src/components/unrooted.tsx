@@ -24,6 +24,7 @@ export interface UnrootedTreeRef {
   getNodes: () => d3.Selection<SVGGElement, UnrootedNode, SVGGElement, unknown> | null;
   getLeaves: () => d3.Selection<SVGTextElement, UnrootedNode, SVGGElement, unknown> | null;
   setDisplayLeaves: (value: boolean) => void;
+  setDisplayNodes: (value: boolean) => void;
   recenterView: () => void;
   refresh: () => void;
   getRoot: () => UnrootedData | null;
@@ -56,6 +57,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
   state
 }, ref) => {
   const [displayLeaves, setDisplayLeaves] = useState(true);
+  const [displayNodes, setDisplayNodes] = useState(true);
   const linkExtensionRef = useRef<d3.Selection<SVGPathElement, Link<UnrootedNode>, SVGGElement, unknown>>(null);
   const linkRef = useRef<d3.Selection<SVGPathElement, Link<UnrootedNode>, SVGGElement, unknown>>(null);
   const nodesRef = useRef<d3.Selection<SVGGElement, UnrootedNode, SVGGElement, unknown>>(null);
@@ -663,7 +665,6 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
 
       // Apply root if specified
       if (stateRef.current && stateRef.current.root) {
-        console.log("Applying root state");
         findAndAddRoot(stateRef.current.root);
       }
     }
@@ -681,6 +682,10 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     leafLabelsRef.current?.style("display", displayLeaves ? "block" : "none");
     linkExtensionRef.current?.style("display", displayLeaves ? "block" : "none");
   }, [displayLeaves]);
+
+  useEffect(() => { // Toggle node visibility
+    nodesRef.current?.style("display", displayNodes ? "block" : "none");
+  }, [displayNodes]);
 
   const recenterView = () => {
     const svg = d3.select(containerRef.current).select('svg').select('g');
@@ -800,6 +805,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
     getNodes: () => nodesRef.current,
     getLeaves: () => leafLabelsRef.current,
     setDisplayLeaves: (value: boolean) => setDisplayLeaves(value),
+    setDisplayNodes: (value: boolean) => setDisplayNodes(value),
     recenterView: () => recenterView(),
     refresh: () => {
       setRefreshTrigger(prev => prev + 1);

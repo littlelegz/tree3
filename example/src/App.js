@@ -16,6 +16,7 @@ function App() {
   const [searchValue, setSearchValue] = useState("Node10");
   const [variableLinks, setVariableLinks] = useState(false);
   const [displayLeaves, setDisplayLeaves] = useState(true);
+  const [displayNodes, setDisplayNodes] = useState(true);
   const [tipAlign, setTipAlign] = useState(false);
 
   useEffect(() => {
@@ -40,6 +41,14 @@ function App() {
       unrootedRef.current.setDisplayLeaves(displayLeaves);
     }
   }, [displayLeaves]);
+
+  useEffect(() => {
+    if (rectRef?.current && radialRef?.current && unrootedRef?.current) {
+      rectRef.current.setDisplayNodes(displayNodes);
+      radialRef.current.setDisplayNodes(displayNodes);
+      unrootedRef.current.setDisplayNodes(displayNodes);
+    }
+  }, [displayNodes]);
 
   useEffect(() => {
     if (rectRef?.current && radialRef?.current) {
@@ -118,6 +127,9 @@ function App() {
         </button>
         <button onClick={() => { rectRef.current.clearHighlights(); radialRef.current.clearHighlights(); unrootedRef.current.clearHighlights(); }}>
           Clear Highlights
+        </button>
+        <button onClick={() => { setDisplayNodes(!displayNodes) }}>
+          Toggle Nodes
         </button>
       </div>
     </div>

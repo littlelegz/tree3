@@ -4960,7 +4960,8 @@ var RectTree = forwardRef(function (_a, ref) {
     var data = _a.data, _b = _a.width, width = _b === void 0 ? 1000 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, customLinkMenuItems = _a.customLinkMenuItems, customTooltip = _a.customTooltip, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler, homeNode = _a.homeNode, state = _a.state;
     var _c = useState(false), variableLinks = _c[0], setVariableLinks = _c[1];
     var _d = useState(true), displayLeaves = _d[0], setDisplayLeaves = _d[1];
-    var _e = useState(false), tipAlign = _e[0], setTipAlign = _e[1];
+    var _e = useState(true), displayNodes = _e[0], setDisplayNodes = _e[1];
+    var _f = useState(false), tipAlign = _f[0], setTipAlign = _f[1];
     var linkExtensionRef = useRef(null);
     var linkRef = useRef(null);
     var nodesRef = useRef(null);
@@ -4969,8 +4970,8 @@ var RectTree = forwardRef(function (_a, ref) {
     var tooltipRef = useRef(null);
     var svgRef = useRef(null);
     var variableLinksRef = useRef(false); // Using this ref so highlighting descendants updates correctly
-    var _f = useState(0), refreshTrigger = _f[0], setRefreshTrigger = _f[1];
-    var _g = useState(null), varData = _g[0], setVarData = _g[1];
+    var _g = useState(0), refreshTrigger = _g[0], setRefreshTrigger = _g[1];
+    var _h = useState(null), varData = _h[0], setVarData = _h[1];
     var stateRef = useRef(state);
     useEffect(function () {
         stateRef.current = state;
@@ -5437,6 +5438,10 @@ var RectTree = forwardRef(function (_a, ref) {
         (_a = leafLabelsRef.current) === null || _a === void 0 ? void 0 : _a.style("display", displayLeaves ? "block" : "none");
         (_b = linkExtensionRef.current) === null || _b === void 0 ? void 0 : _b.style("display", displayLeaves ? "block" : "none");
     }, [displayLeaves]);
+    useEffect(function () {
+        var _a;
+        (_a = nodesRef.current) === null || _a === void 0 ? void 0 : _a.style("display", displayNodes ? "block" : "none");
+    }, [displayNodes]);
     var recenterView = function () {
         var svg = select(containerRef.current).select('svg').select('g');
         svg.transition()
@@ -5521,6 +5526,7 @@ var RectTree = forwardRef(function (_a, ref) {
         getLeaves: function () { return leafLabelsRef.current; },
         setVariableLinks: function (value) { return setVariableLinks(value); },
         setDisplayLeaves: function (value) { return setDisplayLeaves(value); },
+        setDisplayNodes: function (value) { return setDisplayNodes(value); },
         setTipAlign: function (value) { return setTipAlign(value); },
         recenterView: function () { return recenterView(); },
         refresh: function () {
@@ -5561,7 +5567,8 @@ var RadialTree = forwardRef(function (_a, ref) {
     var data = _a.data, _b = _a.width, width = _b === void 0 ? 1000 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, customLinkMenuItems = _a.customLinkMenuItems, customTooltip = _a.customTooltip, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler, homeNode = _a.homeNode, state = _a.state;
     var _c = useState(false), variableLinks = _c[0], setVariableLinks = _c[1];
     var _d = useState(true), displayLeaves = _d[0], setDisplayLeaves = _d[1];
-    var _e = useState(false), tipAlign = _e[0], setTipAlign = _e[1];
+    var _e = useState(true), displayNodes = _e[0], setDisplayNodes = _e[1];
+    var _f = useState(false), tipAlign = _f[0], setTipAlign = _f[1];
     var linkExtensionRef = useRef(null);
     var linkRef = useRef(null);
     var nodesRef = useRef(null);
@@ -5570,8 +5577,8 @@ var RadialTree = forwardRef(function (_a, ref) {
     var tooltipRef = useRef(null);
     var svgRef = useRef(null);
     var variableLinksRef = useRef(false); // Using this ref so highlighting descendants updates correctly
-    var _f = useState(0), refreshTrigger = _f[0], setRefreshTrigger = _f[1];
-    var _g = useState(null), varData = _g[0], setVarData = _g[1];
+    var _g = useState(0), refreshTrigger = _g[0], setRefreshTrigger = _g[1];
+    var _h = useState(null), varData = _h[0], setVarData = _h[1];
     var stateRef = useRef(state);
     var outerRadius = width / 2;
     var innerRadius = outerRadius - 170;
@@ -6071,6 +6078,10 @@ var RadialTree = forwardRef(function (_a, ref) {
         (_a = leafLabelsRef.current) === null || _a === void 0 ? void 0 : _a.style("display", displayLeaves ? "block" : "none");
         (_b = linkExtensionRef.current) === null || _b === void 0 ? void 0 : _b.style("display", displayLeaves ? "block" : "none");
     }, [displayLeaves]);
+    useEffect(function () {
+        var _a;
+        (_a = nodesRef.current) === null || _a === void 0 ? void 0 : _a.style("display", displayNodes ? "block" : "none");
+    }, [displayNodes]);
     var recenterView = function () {
         var svg = select(containerRef.current).select('svg').select('g');
         svg.transition()
@@ -6163,6 +6174,7 @@ var RadialTree = forwardRef(function (_a, ref) {
         getLeaves: function () { return leafLabelsRef.current; },
         setVariableLinks: function (value) { return setVariableLinks(value); },
         setDisplayLeaves: function (value) { return setDisplayLeaves(value); },
+        setDisplayNodes: function (value) { return setDisplayNodes(value); },
         setTipAlign: function (value) { return setTipAlign(value); },
         recenterView: function () { return recenterView(); },
         refresh: function () {
@@ -6481,6 +6493,7 @@ function findAndZoom(name, svg, container, scale) {
 var UnrootedTree = forwardRef(function (_a, ref) {
     var data = _a.data, _b = _a.scale, scale = _b === void 0 ? 500 : _b, onNodeClick = _a.onNodeClick, onLinkClick = _a.onLinkClick, onLeafClick = _a.onLeafClick, onNodeMouseOver = _a.onNodeMouseOver, onNodeMouseOut = _a.onNodeMouseOut, onLeafMouseOver = _a.onLeafMouseOver, onLeafMouseOut = _a.onLeafMouseOut, onLinkMouseOver = _a.onLinkMouseOver, onLinkMouseOut = _a.onLinkMouseOut, customNodeMenuItems = _a.customNodeMenuItems, customLeafMenuItems = _a.customLeafMenuItems, customLinkMenuItems = _a.customLinkMenuItems, customTooltip = _a.customTooltip, nodeStyler = _a.nodeStyler, linkStyler = _a.linkStyler, leafStyler = _a.leafStyler, homeNode = _a.homeNode, _c = _a.linkRoot, linkRoot = _c === void 0 ? true : _c, state = _a.state;
     var _d = useState(true), displayLeaves = _d[0], setDisplayLeaves = _d[1];
+    var _e = useState(true), displayNodes = _e[0], setDisplayNodes = _e[1];
     var linkExtensionRef = useRef(null);
     var linkRef = useRef(null);
     var nodesRef = useRef(null);
@@ -6488,8 +6501,8 @@ var UnrootedTree = forwardRef(function (_a, ref) {
     var containerRef = useRef(null);
     var tooltipRef = useRef(null);
     var svgRef = useRef(null);
-    var _e = useState(0), refreshTrigger = _e[0], setRefreshTrigger = _e[1];
-    var _f = useState(null), varData = _f[0], setVarData = _f[1];
+    var _f = useState(0), refreshTrigger = _f[0], setRefreshTrigger = _f[1];
+    var _g = useState(null), varData = _g[0], setVarData = _g[1];
     var initialStateApplied = useRef(false); // Used to prevent infinite loop when setting state
     var stateRef = useRef(state);
     // Read tree and calculate layout
@@ -6987,7 +7000,6 @@ var UnrootedTree = forwardRef(function (_a, ref) {
             initialStateApplied.current = true;
             // Apply root if specified
             if (stateRef.current && stateRef.current.root) {
-                console.log("Applying root state");
                 findAndAddRoot(stateRef.current.root);
             }
         }
@@ -7005,6 +7017,10 @@ var UnrootedTree = forwardRef(function (_a, ref) {
         (_a = leafLabelsRef.current) === null || _a === void 0 ? void 0 : _a.style("display", displayLeaves ? "block" : "none");
         (_b = linkExtensionRef.current) === null || _b === void 0 ? void 0 : _b.style("display", displayLeaves ? "block" : "none");
     }, [displayLeaves]);
+    useEffect(function () {
+        var _a;
+        (_a = nodesRef.current) === null || _a === void 0 ? void 0 : _a.style("display", displayNodes ? "block" : "none");
+    }, [displayNodes]);
     var recenterView = function () {
         var svg = select(containerRef.current).select('svg').select('g');
         svg.transition()
@@ -7118,6 +7134,7 @@ var UnrootedTree = forwardRef(function (_a, ref) {
         getNodes: function () { return nodesRef.current; },
         getLeaves: function () { return leafLabelsRef.current; },
         setDisplayLeaves: function (value) { return setDisplayLeaves(value); },
+        setDisplayNodes: function (value) { return setDisplayNodes(value); },
         recenterView: function () { return recenterView(); },
         refresh: function () {
             setRefreshTrigger(function (prev) { return prev + 1; });
