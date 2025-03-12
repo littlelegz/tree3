@@ -56,6 +56,8 @@ function App() {
             data={tree}
             ref={radialRef}
             state={{ root: "Node15", colorDict: { "Node15": "#FF9999" } }}
+            customTooltip={(node) => `${node.data.name}<br/>${node.data.name}`}
+            onNodeClick={(ev, node) => console.log(node)}
           />
         </div>
         <div ref={rectContainerRef} style={{ width: "33%", height: "500px", border: "1px solid black", overflow: "hidden" }}>
@@ -63,6 +65,7 @@ function App() {
             data={tree}
             ref={rectRef}
             state={{ root: "Node74", colorDict: { "Node15": "#FF9999" } }}
+            customTooltip={(node) => `${node.data.name}<br/>${node.data.name}`}
           />
         </div>
         <div ref={unrootedContainerRef} style={{ width: "33%", height: "500px", border: "1px solid black", overflow: "hidden" }}>
@@ -72,6 +75,7 @@ function App() {
             onNodeClick={(ev, node) => console.log(node)}
             homeNode={"bilR"}
             state={{ root: "Node74", colorDict: { "Node15": "#FF9999" } }}
+            customTooltip={(node) => `${node.data.name}<br/>${node.data.name}`}
           />
         </div>
       </div>

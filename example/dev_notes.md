@@ -48,3 +48,6 @@ things are tracked in the state.
 
 In an implementation, users can extract the state from one tree, and apply it to
 another tree to maintain consistency across different tree representations.
+
+1.1.3 Release:
+Added custom tooltip (displayed when user hovers over a node) option.

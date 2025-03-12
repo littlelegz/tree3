@@ -49,11 +49,12 @@ export interface RadialTreeProps {
     onClick: (source: RadialNode, target: RadialNode) => void;
     toShow: (source: RadialNode, target: RadialNode) => boolean;
   }];
+  customTooltip?: (node: RadialNode) => string;
   nodeStyler?: (node: RadialNode) => void;
   linkStyler?: (source: RadialNode, target: RadialNode) => void;
   leafStyler?: (node: RadialNode) => void;
   homeNode?: string;
-  state?: state
+  state?: state;
 }
 
 // Extend D3's HierarchyNode with radius property
@@ -101,6 +102,7 @@ export interface UnrootedTreeProps {
     onClick: (source: UnrootedNode, target: UnrootedNode) => void;
     toShow: (source: UnrootedNode, target: UnrootedNode) => boolean;
   }];
+  customTooltip?: (node: UnrootedNode) => string;
   nodeStyler?: (node: UnrootedNode) => void;
   linkStyler?: (source: UnrootedNode, target: UnrootedNode) => void;
   leafStyler?: (node: UnrootedNode) => void;

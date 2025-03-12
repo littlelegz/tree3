@@ -16,7 +16,7 @@ import {
 } from './radialUtils.ts';
 import '../css/tree3.css';
 import '../css/menu.css';
-import BasicColorPicker from './colorPicker.tsx';
+import BasicColorPicker from './colorPicker';
 
 export interface RadialTreeRef {
   getLinkExtensions: () => d3.Selection<SVGPathElement, Link<RadialNode>, SVGGElement, unknown> | null;
@@ -49,11 +49,12 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
   customNodeMenuItems,
   customLeafMenuItems,
   customLinkMenuItems,
+  customTooltip,
   nodeStyler,
   linkStyler,
   leafStyler,
   homeNode,
-  state
+  state,
 }, ref) => {
   const [variableLinks, setVariableLinks] = useState(false);
   const [displayLeaves, setDisplayLeaves] = useState(true);
@@ -451,7 +452,7 @@ const RadialTree = forwardRef<RadialTreeRef, RadialTreeProps>(({
         .style('left', `${event.clientX + 10}px`)
         .style('top', `${event.clientY - 10}px`)
         .style('opacity', 0)
-        .html(`${d.data.name}<br/>Leaves: ${countLeaves(d)}`);
+        .html(`${d.data.name}<br/>Leaves: ${countLeaves(d)}${customTooltip ? '<br/>' + customTooltip(d) : ''}`);
 
       tooltipRef.current
         .transition()

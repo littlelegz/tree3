@@ -47,6 +47,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
   customNodeMenuItems,
   customLeafMenuItems,
   customLinkMenuItems,
+  customTooltip,
   nodeStyler,
   linkStyler,
   leafStyler,
@@ -473,7 +474,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
         .style('left', `${event.clientX + 10}px`)
         .style('top', `${event.clientY - 10}px`)
         .style('opacity', 0)
-        .html(`${d.thisName}<br/>Leaves: ${countLeaves(d)}`);
+        .html(`${d.data.name}<br/>Leaves: ${countLeaves(d)}${customTooltip ? '<br/>' + customTooltip(d) : ''}`);
 
       tooltipRef.current
         .transition()

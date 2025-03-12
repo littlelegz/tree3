@@ -16,7 +16,7 @@ import {
 } from './unrootedUtils.ts';
 import '../css/tree3.css';
 import '../css/menu.css';
-import BasicColorPicker from './colorPicker.tsx';
+import BasicColorPicker from './colorPicker';
 
 export interface UnrootedTreeRef {
   getLinkExtensions: () => d3.Selection<SVGPathElement, Link<UnrootedNode>, SVGGElement, unknown> | null;
@@ -47,6 +47,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
   customNodeMenuItems,
   customLeafMenuItems,
   customLinkMenuItems,
+  customTooltip,
   nodeStyler,
   linkStyler,
   leafStyler,
@@ -473,7 +474,7 @@ const UnrootedTree = forwardRef<UnrootedTreeRef, UnrootedTreeProps>(({
         .style('left', `${event.clientX + 10}px`)
         .style('top', `${event.clientY - 10}px`)
         .style('opacity', 0)
-        .html(`${d.thisName}<br/>Leaves: ${countLeaves(d)}`);
+        .html(`${d.data.name}<br/>Leaves: ${countLeaves(d)}${customTooltip ? '<br/>' + customTooltip(d) : ''}`);
 
       tooltipRef.current
         .transition()
